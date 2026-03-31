@@ -183,10 +183,10 @@ export async function createServer() {
   return app;
 }
 
-const initializedApp = createServer();
-
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-  initializedApp.then(serverApp => {
+// In development, the server listens on its own.
+// In production (Vercel), we'll let the handler in api/index.ts import and use the app.
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  createServer().then(serverApp => {
     const PORT = 3000;
     serverApp.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${PORT}`);
