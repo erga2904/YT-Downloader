@@ -24,16 +24,25 @@ app.post('/api/info', async (req, res) => {
         ]
       });
     } catch (ytdlError) {
-      // Fallback loader.to
+      // Fallback loader.to - Return multiple resolutions even in fallback
       const loaderUrl = `https://loader.to/ajax/download.php?format=720&url=${encodeURIComponent(url)}`;
-      const loaderRes = await fetch(loaderUrl);
-      const data = await loaderRes.json();
-      return res.json({
-        title: data.title || 'Download',
-        thumbnail: data.info?.image || null,
-        hasSubtitles: false,
-        resolutions: [{ label: "720p (HD)", value: "720" }]
-      });
+      try {
+        const loaderRes = await fetch(loaderUrl);
+        const data: any = await loaderRes.json();
+        return res.json({
+          title: data.title || 'Download',
+          thumbnail: data.info?.image || null,
+          hasSubtitles: false,
+          resolutions: [
+            { label: "1080p (Full HD)", value: "1080" },
+            { label: "720p (HD)", value: "720" },
+            { label: "480p (SD)", value: "480" },
+            { label: "360p (Low)", value: "360" }
+          ]
+        });
+      } catch (fallbackErr) {
+        return res.status(500).json({ error: 'Failed to fetch video info' });
+      }
     }
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
