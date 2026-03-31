@@ -1,8 +1,8 @@
-import { app, createServer } from '../server';
+import { app, createServer } from '../server.js';
 
-let initializedPromise: Promise<any> | null = null;
+let initializedPromise = null;
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   // Ensure the server is initialized exactly once per function instance
   if (!initializedPromise) {
     initializedPromise = createServer();
@@ -10,8 +10,6 @@ export default async function handler(req: any, res: any) {
   
   try {
     await initializedPromise;
-    // Vercel serverless uses a standard Node.js server model
-    // but the app(req, res) might need extra care with timing
     return app(req, res);
   } catch (err) {
     console.error('Critical initialization error:', err);
