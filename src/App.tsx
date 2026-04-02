@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Download, Film, Music, Loader2, AlertCircle, Link as LinkIcon, Settings2, Subtitles, ChevronDown, Info, Check, X, Trash2, History, Ghost, EyeOff, Eye, FolderOpen, ExternalLink, FileText, Play, Pause } from 'lucide-react';
+import { Download, Film, Music, Loader2, AlertCircle, Link as LinkIcon, Settings2, Subtitles, ChevronDown, Info, Check, X, Trash2, History, Ghost, EyeOff, Eye, FolderOpen, ExternalLink, FileText, Play, Pause, Bell } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -34,7 +34,6 @@ const translations = {
     secondsRemaining: "seconds remaining",
     advancedSettings: "Advanced Settings",
     autoStartLabel: "Auto Start Download",
-    saveHistoryLabel: "Save Download History",
     privateModeSetting: "Private Mode",
     privateModeInfo: "When enabled, your download history will not be recorded.",
     showConfirmationLabel: "Show Download Confirmation",
@@ -109,7 +108,6 @@ const translations = {
     secondsRemaining: "detik tersisa",
     advancedSettings: "Pengaturan Lanjutan",
     autoStartLabel: "Mulai Unduhan Otomatis",
-    saveHistoryLabel: "Simpan Riwayat Unduhan",
     privateModeSetting: "Mode Privat",
     privateModeInfo: "Saat diaktifkan, riwayat unduhan Anda tidak akan dicatat.",
     showConfirmationLabel: "Tampilkan Konfirmasi Unduhan",
@@ -163,7 +161,7 @@ const translations = {
 
 function CustomSelect({ value, onChange, options, label, disabled, isOpen, onToggle, info, placeholder }: { value: string; onChange: (val: string) => void; options: { label: string; value: string }[]; label: string; disabled?: boolean; isOpen: boolean; onToggle: () => void; info?: string; placeholder?: string }) {
   return (
-    <div className="relative space-y-2">
+  <div className="relative space-y-2">
       <div className="flex items-center gap-1.5">
         <label className="text-sm font-medium text-[rgb(var(--foreground))]/80">{label}</label>
         {info && (
@@ -261,9 +259,8 @@ export default function App() {
   const prevTime = React.useRef(Date.now());
   
   // Settings
-  const [activeTab, setActiveTab] = useState<'download' | 'settings'>('download');
+  const [activeTab, setActiveTab] = useState<'download' | 'settings' | 'notifications'>('download');
   const [autoStart, setAutoStart] = useState(() => localStorage.getItem('autoStart') === 'true');
-  const [saveHistory, setSaveHistory] = useState(() => localStorage.getItem('saveHistory') !== 'false');
   const [bitrate, setBitrate] = useState(() => localStorage.getItem('bitrate') || 'auto');
   const [frameRate, setFrameRate] = useState(() => localStorage.getItem('frameRate') || 'auto');
   const [codec, setCodec] = useState(() => localStorage.getItem('codec') || 'h264');
@@ -279,6 +276,29 @@ export default function App() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const pollTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
+  const [notifications, setNotifications] = useState<any[]>(() => {
+    const saved = localStorage.getItem('notifications');
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: 1, title: 'New Features!', message: 'Added in-app downloads and higher resolutions.', date: Date.now(), read: false },
+      { id: 2, title: 'Upgrade', message: 'Check out the new Premium options coming soon.', date: Date.now() - 86400000, read: false }
+    ];
+  });
+  const [toasts, setToasts] = useState<any[]>([]);
+
+  const playNotificationSound = () => {
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    audio.play().catch(e => console.error('Error playing sound:', e));
+  };
+
+  const addToast = (message: string, type: 'success' | 'info' | 'error' = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    playNotificationSound();
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  };
 
   const handleCancel = () => {
     if (pollTimeoutRef.current) {
@@ -297,7 +317,6 @@ export default function App() {
 
   const [draftSettings, setDraftSettings] = useState({
     autoStart,
-    saveHistory,
     bitrate,
     frameRate,
     codec,
@@ -375,7 +394,6 @@ export default function App() {
     if (activeTab === 'settings') {
       setDraftSettings({
         autoStart,
-        saveHistory,
         bitrate,
         frameRate,
         codec,
@@ -387,7 +405,7 @@ export default function App() {
         language
       });
     }
-  }, [activeTab, autoStart, saveHistory, bitrate, frameRate, codec, audioBitrate, sampleRate, theme, isPrivateMode, showDownloadConfirmation, language]);
+  }, [activeTab, autoStart, bitrate, frameRate, codec, audioBitrate, sampleRate, theme, isPrivateMode, showDownloadConfirmation, language]);
 
   // Save Private Mode preference
   React.useEffect(() => {
@@ -396,7 +414,6 @@ export default function App() {
 
   const handleSaveSettings = () => {
     setAutoStart(draftSettings.autoStart);
-    setSaveHistory(draftSettings.saveHistory);
     setBitrate(draftSettings.bitrate);
     setFrameRate(draftSettings.frameRate);
     setCodec(draftSettings.codec);
@@ -408,7 +425,6 @@ export default function App() {
     setLanguage(draftSettings.language as any);
     
     localStorage.setItem('autoStart', draftSettings.autoStart.toString());
-    localStorage.setItem('saveHistory', draftSettings.saveHistory.toString());
     localStorage.setItem('bitrate', draftSettings.bitrate);
     localStorage.setItem('frameRate', draftSettings.frameRate);
     localStorage.setItem('codec', draftSettings.codec);
@@ -419,6 +435,7 @@ export default function App() {
     localStorage.setItem('showDownloadConfirmation', draftSettings.showDownloadConfirmation.toString());
     localStorage.setItem('language', draftSettings.language);
     
+    addToast('Settings saved successfully', 'success');
     setActiveTab('download');
   };
 
@@ -453,7 +470,6 @@ export default function App() {
   // Save settings to localStorage
   React.useEffect(() => {
     localStorage.setItem('autoStart', String(autoStart));
-    localStorage.setItem('saveHistory', String(saveHistory));
     localStorage.setItem('bitrate', bitrate);
     localStorage.setItem('frameRate', frameRate);
     localStorage.setItem('codec', codec);
@@ -462,7 +478,7 @@ export default function App() {
     localStorage.setItem('isPrivateMode', String(isPrivateMode));
     localStorage.setItem('showDownloadConfirmation', String(showDownloadConfirmation));
     localStorage.setItem('language', language);
-  }, [autoStart, saveHistory, bitrate, frameRate, codec, audioBitrate, sampleRate, isPrivateMode, showDownloadConfirmation, language]);
+  }, [autoStart, bitrate, frameRate, codec, audioBitrate, sampleRate, isPrivateMode, showDownloadConfirmation, language]);
 
   // Check storage size
   React.useEffect(() => {
@@ -487,7 +503,7 @@ export default function App() {
   }, []);
 
   const addToHistory = (item: any) => {
-    if (!saveHistory || isPrivateMode) return;
+    if (isPrivateMode) return;
     const newHistory = [...history, { ...item, timestamp: Date.now() }];
     setHistory(newHistory);
     localStorage.setItem('history', JSON.stringify(newHistory));
@@ -563,6 +579,15 @@ export default function App() {
     }
   };
 
+  const downloadFile = (url: string, filename: string) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const pollProgress = async (progressUrl: string, title: string, thumbnail: string) => {
     try {
       abortControllerRef.current = new AbortController();
@@ -586,6 +611,9 @@ export default function App() {
           transcript: data.transcript 
         });
         setStatus('success');
+        const filename = `${title || 'download'}.${format === 'mp3' ? 'mp3' : 'mp4'}`;
+        downloadFile(data.download_url, filename);
+        addToast('Download completed!', 'success');
         addToHistory({ url: data.download_url, title, thumbnail, format, quality });
         setDownloadInfo(null);
       } else if (data.success === 0) {
@@ -660,6 +688,18 @@ export default function App() {
             >
               {t.settingsTab}
             </button>
+            <button
+              onClick={() => setActiveTab('notifications')}
+              className={cn(
+                "pb-3 px-4 text-sm font-medium transition-all duration-200 hover:bg-[rgb(var(--foreground))]/5 active:bg-[rgb(var(--foreground))]/10 rounded-t-md relative",
+                activeTab === 'notifications' ? "text-[rgb(var(--foreground))] border-b-2 border-[rgb(var(--foreground))]" : "text-[rgb(var(--foreground))]/50"
+              )}
+            >
+              <Bell className="w-4 h-4" />
+              {notifications.some(n => !n.read) && (
+                <span className="absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[rgb(var(--background))]" />
+              )}
+            </button>
             <div className="ml-auto flex items-center gap-2 pb-3">
               <button
                 type="button"
@@ -696,6 +736,31 @@ export default function App() {
             >
               {activeTab === 'download' ? (
                 <div className="space-y-6">
+                  {/* Toasts */}
+                  <div className="fixed top-4 right-4 z-[100] space-y-2">
+                    <AnimatePresence>
+                      {toasts.map(toast => (
+                        <motion.div
+                          key={toast.id}
+                          layout
+                          initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                          animate={{ opacity: 1, x: 0, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          className={cn(
+                            "px-4 py-3 rounded-lg shadow-lg border backdrop-blur-md flex items-center gap-3 min-w-[200px]",
+                            toast.type === 'success' ? "bg-green-500/10 border-green-500/20 text-green-500" :
+                            toast.type === 'error' ? "bg-red-500/10 border-red-500/20 text-red-500" :
+                            "bg-[rgb(var(--foreground))]/10 border-[rgb(var(--foreground))]/10 text-[rgb(var(--foreground))]"
+                          )}
+                        >
+                          {toast.type === 'success' ? <Check className="w-4 h-4" /> : 
+                           toast.type === 'error' ? <AlertCircle className="w-4 h-4" /> : 
+                           <Bell className="w-4 h-4" />}
+                          <span className="text-sm font-medium">{toast.message}</span>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
                   {isPrivateMode && (
                     <motion.div 
                       initial={{ opacity: 0, y: -10 }}
@@ -960,19 +1025,6 @@ export default function App() {
                   </button>
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <label htmlFor="saveHistory" className="text-sm text-[rgb(var(--foreground))]/80">{t.saveHistoryLabel}</label>
-                  <button
-                    type="button"
-                    onClick={() => setDraftSettings(prev => ({ ...prev, saveHistory: !prev.saveHistory }))}
-                    className={cn(
-                      "w-10 h-5 rounded-full transition-colors flex items-center p-0.5 hover:bg-[rgb(var(--foreground))]/10 active:bg-[rgb(var(--foreground))]/20",
-                      draftSettings.saveHistory ? "bg-[rgb(var(--foreground))] justify-end" : "bg-[rgb(var(--foreground))]/20 justify-start"
-                    )}
-                  >
-                    <motion.div layout className="w-4 h-4 bg-[rgb(var(--background))] rounded-full shadow-sm" />
-                  </button>
-                </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -1200,13 +1252,33 @@ export default function App() {
                             </div>
                           </div>
                         </div>
-                        <button 
-                          onClick={() => deleteHistoryItem(item.timestamp)}
-                          className="p-2 text-[rgb(var(--foreground))]/20 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
-                          title={t.deleteFromHistory}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              if (item.url) {
+                                downloadFile(item.url, `${item.title || 'download'}.${item.format === 'mp3' ? 'mp3' : 'mp4'}`);
+                                addToast('Downloading from history...', 'info');
+                              }
+                            }}
+                            disabled={!item.url}
+                            className={cn(
+                              "p-2 rounded-md transition-all",
+                              item.url 
+                                ? "text-[rgb(var(--foreground))]/40 hover:text-green-500 hover:bg-green-500/10" 
+                                : "text-[rgb(var(--foreground))]/10 cursor-not-allowed"
+                            )}
+                            title={item.url ? t.downloadMedia : "Unavailable"}
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => deleteHistoryItem(item.timestamp)}
+                            className="p-2 text-[rgb(var(--foreground))]/40 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-all"
+                            title={t.deleteFromHistory}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1224,6 +1296,51 @@ export default function App() {
                 >
                   {t.saveSettings}
                 </button>
+              </div>
+            </div>
+          )}
+          {activeTab === 'notifications' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-[rgb(var(--foreground))] uppercase tracking-wider flex items-center gap-2">
+                  <Bell className="w-4 h-4" /> Notifications
+                </h3>
+                <button 
+                  onClick={() => {
+                    setNotifications(notifications.map(n => ({ ...n, read: true })));
+                    addToast('All notifications marked as read', 'success');
+                  }}
+                  className="text-[10px] text-[rgb(var(--foreground))]/40 hover:text-[rgb(var(--foreground))] transition-colors"
+                >
+                  Mark all as read
+                </button>
+              </div>
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                {notifications.map(notif => (
+                  <div 
+                    key={notif.id} 
+                    className={cn(
+                      "p-4 rounded-xl border transition-all relative overflow-hidden",
+                      notif.read 
+                        ? "bg-[rgb(var(--foreground))]/5 border-[rgb(var(--foreground))]/10 opacity-60" 
+                        : "bg-[rgb(var(--foreground))]/10 border-purple-500/30 shadow-lg shadow-purple-500/5"
+                    )}
+                  >
+                    {!notif.read && <div className="absolute top-0 left-0 w-1 h-full bg-purple-500" />}
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className="text-sm font-bold text-[rgb(var(--foreground))]">{notif.title}</h4>
+                      <span className="text-[10px] text-[rgb(var(--foreground))]/40">
+                        {new Date(notif.date).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[rgb(var(--foreground))]/70 leading-relaxed">{notif.message}</p>
+                    {notif.title === 'Upgrade' && (
+                      <button className="mt-3 w-full py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:opacity-90 transition-opacity">
+                        Explore Premium
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
