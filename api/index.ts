@@ -12,11 +12,24 @@ app.post('/api/info', async (req, res) => {
 
     try {
       const info = await ytdl.getBasicInfo(url);
+      const formats = await ytdl.getInfo(url).then(info => info.formats);
+      
+      const videoFormats = formats.filter(f => f.hasVideo);
+      const uniqueResolutions = Array.from(new Set(videoFormats.map(f => f.qualityLabel).filter(Boolean)))
+        .map(quality => {
+          const res = quality!.match(/\d+/);
+          return {
+            label: quality!,
+            value: res ? res[0] : quality!
+          };
+        })
+        .sort((a, b) => parseInt(b.value) - parseInt(a.value));
+
       return res.json({
         title: info.videoDetails.title,
         thumbnail: info.videoDetails.thumbnails[info.videoDetails.thumbnails.length - 1].url,
         hasSubtitles: !!info.player_response.captions,
-        resolutions: [
+        resolutions: uniqueResolutions.length > 0 ? uniqueResolutions : [
           { label: "1080p (Full HD)", value: "1080" },
           { label: "720p (HD)", value: "720" },
           { label: "480p (SD)", value: "480" },
@@ -34,6 +47,9 @@ app.post('/api/info', async (req, res) => {
           thumbnail: data.info?.image || null,
           hasSubtitles: false,
           resolutions: [
+            { label: "8K (Extreme)", value: "144" }, // loader.to codes for high res
+            { label: "4K (Ultra HD)", value: "4k" },
+            { label: "1440p (QHD)", value: "1440" },
             { label: "1080p (Full HD)", value: "1080" },
             { label: "720p (HD)", value: "720" },
             { label: "480p (SD)", value: "480" },
