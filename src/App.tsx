@@ -299,7 +299,7 @@ export default function App() {
 
       // Start polling
       await pollProgress(data.progress_url, data.title, data.thumbnail);
-      setReDownloadItem(null);
+      // Don't set reDownloadItem to null here, wait for completion or user closure
     } catch (err: any) {
       addToast(err.message, 'error');
     } finally {
@@ -1626,28 +1626,55 @@ export default function App() {
                         </div>
                       )}
 
+                      {status === 'success' && reDownloadItem && (
+                        <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl space-y-3">
+                          <div className="flex items-center gap-2 text-green-500">
+                            <Check className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">{t.downloadMedia || "Download Ready"}</span>
+                          </div>
+                          <p className="text-[10px] text-green-500/70 italic leading-relaxed">
+                            {t.mediaProcessed || "Media processed successfully. You can download it now."}
+                          </p>
+                          <button
+                            onClick={() => {
+                              if (result?.url) {
+                                downloadFile(result.url, `${result.title || 'download'}.${reDownloadFormat === 'mp3' ? 'mp3' : 'mp4'}`);
+                                addToast('Downloading...', 'success');
+                              }
+                            }}
+                            className="w-full py-2.5 bg-green-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-green-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-500/20"
+                          >
+                            <Download className="w-3 h-3" /> {t.downloadBtn || "Download Now"}
+                          </button>
+                        </div>
+                      )}
+
                       <div className="flex gap-2">
                         <button 
                           onClick={() => {
                             if (isReDownloading) handleCancel();
                             setReDownloadItem(null);
+                            setStatus('idle');
                           }}
                           className="flex-1 py-3 text-xs font-bold border border-[rgb(var(--foreground))]/10 rounded-xl hover:bg-[rgb(var(--foreground))]/5 transition-colors"
                         >
-                          {isReDownloading ? t.cancelDownload : (t.batal || "Batal")}
+                          {status === 'success' ? (t.tutup || "Tutup") : (isReDownloading ? t.cancelDownload : (t.batal || "Batal"))}
                         </button>
-                        <button 
-                          onClick={handleReDownload}
-                          disabled={isReDownloading}
-                          className="flex-1 py-3 text-xs font-bold bg-[rgb(var(--foreground))] text-[rgb(var(--background))] rounded-xl hover:bg-[rgb(var(--foreground))]/90 shadow-lg shadow-[rgb(var(--foreground))]/10 transition-all active:scale-95 disabled:opacity-50"
-                        >
-                          {isReDownloading ? (
-                            <div className="flex items-center justify-center gap-2">
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                              {t.processing}
-                            </div>
-                          ) : (t.yaDownloadUlang || "Ya, Download Ulang")}
-                        </button>
+                        {status !== 'success' && (
+                          <button 
+                            onClick={handleReDownload}
+                            disabled={isReDownloading}
+                            className="flex-1 py-3 text-xs font-bold bg-[rgb(var(--foreground))] text-[rgb(var(--background))] rounded-xl hover:bg-[rgb(var(--foreground))]/90 shadow-lg shadow-[rgb(var(--foreground))]/10 transition-all active:scale-95 disabled:opacity-50"
+                          >
+                            {isReDownloading ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                {t.processing}
+                              </div>
+                            ) : (t.yaDownloadUlang || "Ya, Download Ulang")}
+                          </button>
+                        )}
+                      </div>
                       </div>
                     </motion.div>
                   </div>,
