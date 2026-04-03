@@ -94,7 +94,12 @@ app.post('/api/info', async (req, res) => {
 app.post('/api/download', async (req, res) => {
   try {
     const { url, format, quality } = req.body;
-    if (!url) return res.status(400).json({ error: 'URL is required' });
+    if (!url) {
+      console.log('Download attempt rejected: URL missing');
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    console.log(`Starting download for URL: ${url}, Format: ${format}, Quality: ${quality}`);
 
     // Mapping internal quality logic (1080, 720, etc.) to loader.to format codes
     let loaderFormat = format === 'mp3' ? 'mp3' : (quality || '720');
