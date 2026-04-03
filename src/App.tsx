@@ -103,6 +103,21 @@
       postMediaLabel: "Post Media",
       previewThumbnail: "Preview Thumbnail",
       selectThumbnailQuality: "Select Thumbnail Quality",
+      qaTitle: "Frequently Asked Questions (Q&A)",
+      qaItems: [
+        {
+          q: "Why isn't 4K resolution appearing?",
+          a: "Currently, we only support up to 1080p to ensure stable and consistent download results across all devices."
+        },
+        {
+          q: "Why is the downloaded file different from the selection?",
+          a: "YouTube changes formats frequently. If a specific resolution isn't available, the server provides the next best compatible quality."
+        },
+        {
+          q: "Is this service free?",
+          a: "Yes, this is a portfolio project and can be used for free for educational and personal use."
+        }
+      ]
     },
     id: {
       title: "YouTube Downloader",
@@ -197,6 +212,21 @@
       postMediaLabel: "Media Postingan",
       previewThumbnail: "Pratinjau Thumbnail",
       selectThumbnailQuality: "Pilih Kualitas Thumbnail",
+      qaTitle: "Pertanyaan yang Sering Diajukan (Q&A)",
+      qaItems: [
+        {
+          q: "Mengapa resolusi 4K tidak muncul?",
+          a: "Saat ini kami hanya mendukung hingga 1080p untuk memastikan hasil unduhan yang stabil dan konsisten di semua perangkat."
+        },
+        {
+          q: "Mengapa hasil download berbeda dengan pilihan?",
+          a: "YouTube sering memperbarui format mereka. Jika resolusi tertentu tidak tersedia, server akan memberikan kualitas terbaik berikutnya yang kompatibel."
+        },
+        {
+          q: "Apakah layanan ini gratis?",
+          a: "Ya, ini adalah proyek portofolio dan dapat digunakan secara gratis untuk keperluan edukasi dan pribadi."
+        }
+      ]
     }
   };
 
@@ -1853,6 +1883,33 @@
           
           </motion.div>
         </div>
+
+        {/* Q&A Section */}
+        <section className="w-full max-w-2xl mx-auto mt-12 mb-20 px-4">
+          <h2 className="text-xl font-bold text-[rgb(var(--foreground))] mb-6 text-center">
+            {t.qaTitle}
+          </h2>
+          <div className="space-y-4">
+            {t.qaItems.map((qa, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="p-5 rounded-2xl bg-[rgb(var(--foreground))]/5 border border-[rgb(var(--foreground))]/10"
+              >
+                <h3 className="font-semibold text-sm text-[rgb(var(--foreground))] mb-2 flex items-start gap-2">
+                  <span className="opacity-40 shrink-0">Q:</span>
+                  {qa.q}
+                </h3>
+                <p className="text-sm text-[rgb(var(--foreground))]/60 flex items-start gap-2">
+                  <span className="opacity-40 shrink-0">A:</span>
+                  {qa.a}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
 
         <footer className="w-full py-6 text-center">
         </footer>
