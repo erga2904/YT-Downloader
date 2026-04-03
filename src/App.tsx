@@ -203,7 +203,7 @@ const translations = {
 function CustomSelect({ value, onChange, options, label, disabled, isOpen, onToggle, info, placeholder }: { value: string; onChange: (val: string) => void; options: { label: string; value: string }[]; label: string; disabled?: boolean; isOpen: boolean; onToggle: () => void; info?: string; placeholder?: string }) {
   return (
   <div className="relative space-y-2">
-      <div className="flex items-center gap-1.5">
+     <div className="flex items-center gap-1.5">
         <label className="text-sm font-medium text-[rgb(var(--foreground))]/80">{label}</label>
         {info && (
           <div className="group relative">
@@ -1674,7 +1674,6 @@ export default function App() {
                             ) : (t.yaDownloadUlang || "Ya, Download Ulang")}
                           </button>
                         )}
-                      </div>
                       </div>
                     </motion.div>
                   </div>,
