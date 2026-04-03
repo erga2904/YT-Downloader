@@ -66,29 +66,71 @@ app.post('/api/info', async (req, res) => {
 app.post('/api/download', async (req, res) => {
   try {
     const { url, format, quality } = req.body;
+    if (!url) return res.status(400).json({ error: 'URL is required' });
+
+    // Sanitize and prepare format/quality for loader.to
+    // format can be 'mp3' or 'video'
+    // quality is typically '1080', '720', etc.
     const loaderFormat = format === 'mp3' ? 'mp3' : (quality || '720');
-    const loaderUrl = `https://loader.to/ajax/download.php?format=${loaderFormat}&url=${encodeURIComponent(url)}`;
-    const loaderRes = await fetch(loaderUrl);
-    const data = await loaderRes.json();
+    
+    // Use the native fetch for Vercel/Node 18+
+    const fetchUrl = `https://loader.to/ajax/download.php?format=${loaderFormat}&url=${encodeURIComponent(url)}`;
+    
+    const loaderRes = await fetch(fetchUrl);
+    
+    // Check if response is ok
+    if (!loaderRes.ok) {
+      throw new Error(`Loader.to responded with status: ${loaderRes.status}`);
+    }
+
+    const data: any = await loaderRes.json();
+    
+    // Ensure essential fields exist in data
+    if (!data.id || !data.progress_url) {
+      return res.status(500).json({ 
+        error: 'Invalid response from download server',
+        details: data 
+      });
+    }
+
     res.json({
       id: data.id,
       progress_url: data.progress_url,
       title: data.title || 'Download',
       thumbnail: data.info?.image || null
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+  } catch (error: any) {
+    console.error('Download error:', error);
+    res.status(500).json({ 
+      error: 'Download server communication error',
+      message: error.message 
+    });
   }
 });
 
 app.get('/api/progress', async (req, res) => {
   try {
     const { url } = req.query;
-    const progressRes = await fetch(url);
+    if (!url) return res.status(400).json({ error: 'Progress URL is required' });
+
+    console.log('Polling progress for:', url);
+    const progressRes = await fetch(url as string);
+    
+    if (!progressRes.ok) {
+      console.error(`Progress server returned ${progressRes.status}`);
+      return res.status(progressRes.status).json({ 
+        error: 'Failed to fetch progress from download server' 
+      });
+    }
+
     const data = await progressRes.json();
     res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+  } catch (error: any) {
+    console.error('Progress API error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error while fetching progress',
+      message: error.message 
+    });
   }
 });
 
