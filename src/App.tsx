@@ -1697,7 +1697,7 @@ const translations = {
                           </div>
                         )}
 
-                        {(status === 'loading' || isReDownloading) && (
+                        {status === 'loading' && !isReDownloading && (
                           <div className="mb-6 space-y-2">
                             <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--foreground))]/40">
                               <span>{progressText}</span>
@@ -1716,6 +1716,16 @@ const translations = {
                                 <span>{downloadInfo.remaining}</span>
                               </div>
                             )}
+                          </div>
+                        )}
+
+                        {isReDownloading && (
+                          <div className="mb-6 p-4 bg-[rgb(var(--foreground))]/5 rounded-xl border border-[rgb(var(--foreground))]/10 flex items-center gap-3 animate-pulse">
+                            <Loader2 className="w-5 h-5 animate-spin text-[rgb(var(--foreground))]/40" />
+                            <div className="space-y-1">
+                              <p className="text-xs font-bold text-[rgb(var(--foreground))]/60 uppercase tracking-widest">{t.processing}</p>
+                              <p className="text-[10px] text-[rgb(var(--foreground))]/40 italic">Please wait while we re-fetch a fresh link...</p>
+                            </div>
                           </div>
                         )}
 
