@@ -117,7 +117,13 @@
           q: "Is this service free?",
           a: "Yes, this is a portfolio project and can be used for free for educational and personal use."
         }
-      ]
+      ],
+      tutup: "Close",
+      batal: "Cancel",
+      yaDownloadUlang: "Yes, Re-download",
+      linkSesiHabis: "Session Expired",
+      linkExpiredDesc: "This download link has expired. Would you like to automatically re-fetch a new link?",
+      sortingBySize: "Sorted by size (largest first)"
     },
     id: {
       title: "YouTube Downloader",
@@ -226,11 +232,13 @@
           q: "Apakah layanan ini gratis?",
           a: "Ya, ini adalah proyek portofolio dan dapat digunakan secara gratis untuk keperluan edukasi dan pribadi."
         }
-      ]
-    }
-  };
-
-  function CustomSelect({ value, onChange, options, label, disabled, isOpen, onToggle, info, placeholder }: { value: string; onChange: (val: string) => void; options: { label: string; value: string }[]; label: string; disabled?: boolean; isOpen: boolean; onToggle: () => void; info?: string; placeholder?: string }) {
+        ],
+        tutup: "Tutup",
+        batal: "Batal",
+        yaDownloadUlang: "Ya, Download Ulang",
+        linkSesiHabis: "Link Sesi Habis",
+        linkExpiredDesc: "Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini secara otomatis?",
+        sortingBySize: "Diurutkan berdasarkan ukuran (terbesar dulu)"
     return (
     <div className="relative space-y-2">
       <div className="flex items-center gap-1.5">
@@ -292,6 +300,7 @@
     const [isPostMedia, setIsPostMedia] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
     const transcriptScrollRef = React.useRef<HTMLDivElement>(null);
     const playbackIntervalRef = React.useRef<any>(null);
 
@@ -643,8 +652,20 @@
     };
 
     const sortHistoryBySize = () => {
-      const sorted = [...history].sort((a, b) => (JSON.stringify(b).length - JSON.stringify(a).length));
-      setHistory(sorted);
+      setHistory(prev => {
+        const sorted = [...prev].sort((a, b) => {
+          const parseRes = (q: string) => {
+            const match = q.match(/(\d+)/);
+            return match ? parseInt(match[1]) : 0;
+          };
+          return sortOrder === 'desc' 
+            ? parseRes(b.quality) - parseRes(a.quality)
+            : parseRes(a.quality) - parseRes(b.quality);
+        });
+        return sorted;
+      });
+      setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+      addToast(t.sortingBySize, 'info');
     };
 
     const deleteHistoryItem = (timestamp: number) => {
@@ -1556,8 +1577,13 @@
 
                   {reDownloadItem && typeof document !== 'undefined' && createPortal(
                     <div
-                      className="absolute left-0 right-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-                      style={{ top: reDownloadViewport.top, height: reDownloadViewport.height || window.innerHeight }}
+                      className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-hidden"
+                      onClick={(e) => {
+                        if (e.target === e.currentTarget && !isReDownloading && status !== 'success') {
+                          setReDownloadItem(null);
+                          setStatus('idle');
+                        }
+                      }}
                     >
                       <motion.div 
                         key="redownload-modal"
@@ -1565,13 +1591,14 @@
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
                         className="bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/10 p-6 rounded-2xl w-full max-w-sm shadow-2xl relative"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <h4 className="text-sm font-bold mb-2">{t.linkSesiHabis || "Link Sesi Habis"}</h4>
+                        <h4 className="text-sm font-bold mb-2">{t.linkSesiHabis}</h4>
                         <p className="text-xs text-[rgb(var(--foreground))]/60 mb-6 font-medium leading-relaxed">
-                          {t.linkExpiredDesc || `Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini ("${reDownloadItem.title}") secara otomatis?`}
+                          {t.linkExpiredDesc}
                         </p>
 
-                        {(!isReDownloading && status !== 'success') && (
+                        {(status !== 'loading' && status !== 'success') && (
                           <div className="mb-6 space-y-3">
                             <div className="space-y-2">
                               <span className="text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--foreground))]/40">Format</span>
@@ -1638,7 +1665,19 @@
                           </div>
                         )}
 
-                        {isReDownloading && (
+                        {(status === 'loading' && !isReDownloading && progressValue === 0) && (
+                          <div className="mb-6 space-y-3">
+                            <div className="flex items-center gap-3 p-4 bg-[rgb(var(--foreground))]/5 rounded-xl border border-[rgb(var(--foreground))]/10 animate-pulse">
+                              <Loader2 className="w-5 h-5 animate-spin text-[rgb(var(--foreground))]/40" />
+                              <div className="space-y-1">
+                                <p className="text-xs font-bold text-[rgb(var(--foreground))]/60 uppercase tracking-widest">{t.initializing}</p>
+                                <p className="text-[10px] text-[rgb(var(--foreground))]/40 italic">Please wait while we check mirror servers...</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {(status === 'loading' || isReDownloading) && (
                           <div className="mb-6 space-y-2">
                             <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--foreground))]/40">
                               <span>{progressText}</span>
@@ -1647,7 +1686,7 @@
                             <div className="h-1.5 w-full bg-[rgb(var(--foreground))]/5 rounded-full overflow-hidden">
                               <motion.div 
                                 initial={{ width: 0 }}
-                                animate={{ width: `${progressValue}%` }}
+                                animate={{ width: `${progressValue || 0}%` }}
                                 className="h-full bg-[rgb(var(--foreground))]"
                               />
                             </div>
@@ -1686,26 +1725,26 @@
                         <div className="flex gap-2">
                           <button 
                             onClick={() => {
-                              if (isReDownloading) handleCancel();
+                              if (status === 'loading' || isReDownloading) handleCancel();
                               setReDownloadItem(null);
                               setStatus('idle');
                             }}
                             className="flex-1 py-3 text-xs font-bold border border-[rgb(var(--foreground))]/10 rounded-xl hover:bg-[rgb(var(--foreground))]/5 transition-colors"
                           >
-                            {status === 'success' ? (t.tutup || "Tutup") : (isReDownloading ? t.cancelDownload : (t.batal || "Batal"))}
+                            {status === 'success' ? t.tutup : (status === 'loading' || isReDownloading ? t.cancelDownload : t.batal)}
                           </button>
                           {status !== 'success' && (
                             <button 
                               onClick={handleReDownload}
-                              disabled={isReDownloading}
+                              disabled={status === 'loading' || isReDownloading}
                               className="flex-1 py-3 text-xs font-bold bg-[rgb(var(--foreground))] text-[rgb(var(--background))] rounded-xl hover:bg-[rgb(var(--foreground))]/90 shadow-lg shadow-[rgb(var(--foreground))]/10 transition-all active:scale-95 disabled:opacity-50"
                             >
-                              {isReDownloading ? (
+                              {(status === 'loading' || isReDownloading) ? (
                                 <div className="flex items-center justify-center gap-2">
                                   <Loader2 className="w-3 h-3 animate-spin" />
                                   {t.processing}
                                 </div>
-                              ) : (t.yaDownloadUlang || "Ya, Download Ulang")}
+                              ) : t.yaDownloadUlang}
                             </button>
                           )}
                         </div>
