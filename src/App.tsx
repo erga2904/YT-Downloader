@@ -234,6 +234,36 @@ export default function App() {
     }
   };
 
+  const handleReDownload = async () => {
+    if (!reDownloadItem) return;
+    
+    setIsReDownloading(true);
+    addToast('Contacting server...', 'info', false);
+    
+    try {
+      const res = await fetch('/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          url: reDownloadItem.originalUrl, 
+          format: reDownloadItem.format, 
+          quality: reDownloadItem.quality 
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to re-fetch');
+
+      // Start polling
+      pollProgress(data.progress_url, data.title, data.thumbnail);
+      setReDownloadItem(null);
+    } catch (err: any) {
+      addToast(err.message, 'error');
+    } finally {
+      setIsReDownloading(false);
+    }
+  };
+
   React.useEffect(() => {
     return () => {
       if (playbackIntervalRef.current) clearInterval(playbackIntervalRef.current);
@@ -276,6 +306,8 @@ export default function App() {
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [isReDownloading, setIsReDownloading] = useState(false);
+  const [reDownloadItem, setReDownloadItem] = useState<any>(null);
   const pollTimeoutRef = React.useRef<any>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const [notifications, setNotifications] = useState<any[]>(() => {
@@ -627,7 +659,7 @@ export default function App() {
         const filename = `${title || 'download'}.${format === 'mp3' ? 'mp3' : 'mp4'}`;
         downloadFile(data.download_url, filename);
         addToast('Download completed!', 'success');
-        addToHistory({ url: data.download_url, title, thumbnail, format, quality });
+        addToHistory({ url: data.download_url, originalUrl: url, title, thumbnail, format, quality });
         setDownloadInfo(null);
       } else if (data.success === 0) {
         setProgressText(data.text || t.processing);
@@ -735,6 +767,33 @@ export default function App() {
           </div>
 
           <AnimatePresence mode="wait">
+            {/* Toasts - Fixed position outside tab layout */}
+            <div className="fixed top-4 right-4 z-[100] space-y-2 pointer-events-none">
+              <AnimatePresence>
+                {toasts.map(toast => (
+                  <motion.div
+                    key={toast.id}
+                    layout
+                    initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 20, opacity: 0 }}
+                    transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                    className={cn(
+                      "px-4 py-3 rounded-lg shadow-lg border backdrop-blur-md flex items-center gap-3 min-w-[200px] pointer-events-auto",
+                      toast.type === 'success' ? "bg-green-500/10 border-green-500/20 text-green-500" :
+                      toast.type === 'error' ? "bg-red-500/10 border-red-500/20 text-red-500" :
+                      "bg-[rgb(var(--foreground))]/10 border-[rgb(var(--foreground))]/10 text-[rgb(var(--foreground))]"
+                    )}
+                  >
+                    {toast.type === 'success' ? <Check className="w-4 h-4 shrink-0" /> : 
+                     toast.type === 'error' ? <AlertCircle className="w-4 h-4 shrink-0" /> : 
+                     <div className="w-4 h-4 bg-blue-500 rounded-full shrink-0" />}
+                    <span className="text-sm font-medium">{toast.message}</span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+
             <motion.div
               key={activeTab}
               initial={{ opacity: 0, x: activeTab === 'download' ? -10 : 10 }}
@@ -744,31 +803,6 @@ export default function App() {
             >
               {activeTab === 'download' ? (
                 <div className="space-y-6">
-                  {/* Toasts */}
-                  <div className="fixed top-4 right-4 z-[100] space-y-2">
-                    <AnimatePresence>
-                      {toasts.map(toast => (
-                        <motion.div
-                          key={toast.id}
-                          layout
-                          initial={{ opacity: 0, x: 20, scale: 0.9 }}
-                          animate={{ opacity: 1, x: 0, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          className={cn(
-                            "px-4 py-3 rounded-lg shadow-lg border backdrop-blur-md flex items-center gap-3 min-w-[200px]",
-                            toast.type === 'success' ? "bg-green-500/10 border-green-500/20 text-green-500" :
-                            toast.type === 'error' ? "bg-red-500/10 border-red-500/20 text-red-500" :
-                            "bg-[rgb(var(--foreground))]/10 border-[rgb(var(--foreground))]/10 text-[rgb(var(--foreground))]"
-                          )}
-                        >
-                          {toast.type === 'success' ? <Check className="w-4 h-4" /> : 
-                           toast.type === 'error' ? <AlertCircle className="w-4 h-4" /> : 
-                           <div className="w-4 h-4 bg-blue-500 rounded-full" />}
-                          <span className="text-sm font-medium">{toast.message}</span>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
                   {isPrivateMode && (
                     <motion.div 
                       initial={{ opacity: 0, y: -10 }}
@@ -1262,20 +1296,24 @@ export default function App() {
                         </div>
                         <div className="flex items-center gap-1">
                           <button
-                            onClick={() => {
-                              if (item.url) {
-                                downloadFile(item.url, `${item.title || 'download'}.${item.format === 'mp3' ? 'mp3' : 'mp4'}`);
-                                addToast('Downloading from history...', 'info', false);
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(item.url, { method: 'HEAD' });
+                                if (response.ok) {
+                                  downloadFile(item.url, `${item.title || 'download'}.${item.format === 'mp3' ? 'mp3' : 'mp4'}`);
+                                  addToast('Downloading from history...', 'info', false);
+                                } else {
+                                  throw new Error('Link expired');
+                                }
+                              } catch (e) {
+                                setReDownloadItem({ ...item });
                               }
                             }}
-                            disabled={!item.url}
                             className={cn(
-                              "p-2 rounded-md transition-all",
-                              item.url 
-                                ? "text-[rgb(var(--foreground))]/40 hover:text-green-500 hover:bg-green-500/10" 
-                                : "text-[rgb(var(--foreground))]/10 cursor-not-allowed"
+                              "p-2 rounded-md transition-all text-[rgb(var(--foreground))]/40 hover:text-green-500 hover:bg-green-500/10",
+                              isReDownloading && "animate-pulse"
                             )}
-                            title={item.url ? t.downloadMedia : "Unavailable"}
+                            title={t.downloadMedia}
                           >
                             <Download className="w-4 h-4" />
                           </button>
@@ -1290,6 +1328,35 @@ export default function App() {
                       </div>
                     ))}
                   </div>
+
+                  {reDownloadItem && (
+                    <div className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/10 p-6 rounded-2xl w-full max-w-sm shadow-2xl"
+                      >
+                        <h4 className="text-sm font-bold mb-2">Link Sesi Habis</h4>
+                        <p className="text-xs text-[rgb(var(--foreground))]/60 mb-6">
+                          Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini ("{reDownloadItem.title}") secara otomatis?
+                        </p>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setReDownloadItem(null)}
+                            className="flex-1 py-2 text-xs font-medium border border-[rgb(var(--foreground))]/10 rounded-lg hover:bg-[rgb(var(--foreground))]/5"
+                          >
+                            Batal
+                          </button>
+                          <button 
+                            onClick={handleReDownload}
+                            className="flex-1 py-2 text-xs font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-lg shadow-green-500/20"
+                          >
+                            Ya, Download Ulang
+                          </button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
                 ) : (
                   <div className="py-8 text-center bg-[rgb(var(--foreground))]/5 rounded-xl border border-dashed border-[rgb(var(--foreground))]/10">
                     <p className="text-xs text-[rgb(var(--foreground))]/30 italic">{t.noHistory}</p>
