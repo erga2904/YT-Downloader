@@ -192,7 +192,7 @@ const translations = {
 
 function CustomSelect({ value, onChange, options, label, disabled, isOpen, onToggle, info, placeholder }: { value: string; onChange: (val: string) => void; options: { label: string; value: string }[]; label: string; disabled?: boolean; isOpen: boolean; onToggle: () => void; info?: string; placeholder?: string }) {
   return (
-  <div className="relative space-y-2">
+<div className="relative space-y-2">
       <div className="flex items-center gap-1.5">
         <label className="text-sm font-medium text-[rgb(var(--foreground))]/80">{label}</label>
         {info && (
@@ -277,8 +277,8 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           url: reDownloadItem.originalUrl, 
-          format: reDownloadItem.format, 
-          quality: reDownloadItem.quality 
+          format: reDownloadFormat,
+          quality: reDownloadFormat === 'mp3' ? reDownloadAudioBitrate : reDownloadQuality
         })
       });
 
@@ -339,6 +339,9 @@ export default function App() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isReDownloading, setIsReDownloading] = useState(false);
   const [reDownloadItem, setReDownloadItem] = useState<any>(null);
+  const [reDownloadFormat, setReDownloadFormat] = useState<'video' | 'mp3'>('video');
+  const [reDownloadQuality, setReDownloadQuality] = useState('720');
+  const [reDownloadAudioBitrate, setReDownloadAudioBitrate] = useState('320');
   const [reDownloadViewport, setReDownloadViewport] = useState({ top: 0, height: 0 });
   const pollTimeoutRef = React.useRef<any>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
@@ -1415,6 +1418,10 @@ export default function App() {
                                 }
                               } catch (e) {
                                 setReDownloadViewport({ top: window.scrollY, height: window.innerHeight });
+                                const initialFormat = item.format === 'mp3' ? 'mp3' : 'video';
+                                setReDownloadFormat(initialFormat);
+                                setReDownloadQuality(item.quality || availableResolutions.find(r => r.value === '720')?.value || availableResolutions[0]?.value || '720');
+                                setReDownloadAudioBitrate('320');
                                 setReDownloadItem({ ...item });
                               }
                             }}
@@ -1459,6 +1466,73 @@ export default function App() {
                       <p className="text-xs text-[rgb(var(--foreground))]/60 mb-6 font-medium leading-relaxed">
                         {t.linkExpiredDesc || `Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini ("${reDownloadItem.title}") secara otomatis?`}
                       </p>
+
+                      {!isReDownloading && (
+                        <div className="mb-6 space-y-3">
+                          <div className="space-y-2">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--foreground))]/40">Format</span>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setReDownloadFormat('video')}
+                                className={cn(
+                                  "py-2 rounded-lg border text-xs font-semibold transition-all",
+                                  reDownloadFormat === 'video'
+                                    ? "bg-[rgb(var(--foreground))] text-[rgb(var(--background))] border-[rgb(var(--foreground))]"
+                                    : "bg-[rgb(var(--foreground))]/5 text-[rgb(var(--foreground))]/70 border-[rgb(var(--foreground))]/10 hover:bg-[rgb(var(--foreground))]/10"
+                                )}
+                              >
+                                Video
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setReDownloadFormat('mp3')}
+                                className={cn(
+                                  "py-2 rounded-lg border text-xs font-semibold transition-all",
+                                  reDownloadFormat === 'mp3'
+                                    ? "bg-[rgb(var(--foreground))] text-[rgb(var(--background))] border-[rgb(var(--foreground))]"
+                                    : "bg-[rgb(var(--foreground))]/5 text-[rgb(var(--foreground))]/70 border-[rgb(var(--foreground))]/10 hover:bg-[rgb(var(--foreground))]/10"
+                                )}
+                              >
+                                Audio
+                              </button>
+                            </div>
+                          </div>
+
+                          {reDownloadFormat === 'video' ? (
+                            <div className="space-y-2">
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--foreground))]/40">Kualitas Video</span>
+                              <select
+                                value={reDownloadQuality}
+                                onChange={(e) => setReDownloadQuality(e.target.value)}
+                                className="w-full bg-[rgb(var(--foreground))]/5 border border-[rgb(var(--foreground))]/10 rounded-lg px-3 py-2 text-xs text-[rgb(var(--foreground))]"
+                              >
+                                {(availableResolutions.length > 0 ? availableResolutions : [
+                                  { label: '1080p (Full HD)', value: '1080' },
+                                  { label: '720p (HD)', value: '720' },
+                                  { label: '480p (SD)', value: '480' },
+                                  { label: '360p (Low)', value: '360' }
+                                ]).map((res) => (
+                                  <option key={res.value} value={res.value}>{res.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--foreground))]/40">Audio Bitrate</span>
+                              <select
+                                value={reDownloadAudioBitrate}
+                                onChange={(e) => setReDownloadAudioBitrate(e.target.value)}
+                                className="w-full bg-[rgb(var(--foreground))]/5 border border-[rgb(var(--foreground))]/10 rounded-lg px-3 py-2 text-xs text-[rgb(var(--foreground))]"
+                              >
+                                <option value="128">128 kbps</option>
+                                <option value="192">192 kbps</option>
+                                <option value="320">320 kbps</option>
+                              </select>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {isReDownloading && (
                         <div className="mb-6 space-y-2">
