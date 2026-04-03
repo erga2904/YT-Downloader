@@ -771,7 +771,7 @@ export default function App() {
 
   return (
   <div className="min-h-screen bg-[rgb(var(--background))] text-[rgb(var(--foreground))] flex flex-col items-center justify-center p-4 font-sans transition-colors duration-300">
-      <div className="flex-1 flex items-center justify-center w-full">
+    <div className="flex-1 flex items-center justify-center w-full">
         <motion.div 
         initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1443,26 +1443,28 @@ export default function App() {
                 {reDownloadItem && (
                   <div className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
                     <motion.div 
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/10 p-6 rounded-2xl w-full max-w-sm shadow-2xl"
+                      key="redownload-modal"
+                      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                      className="bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/10 p-6 rounded-2xl w-full max-w-sm shadow-2xl relative"
                     >
-                      <h4 className="text-sm font-bold mb-2">Link Sesi Habis</h4>
-                      <p className="text-xs text-[rgb(var(--foreground))]/60 mb-6">
-                        Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini ("{reDownloadItem.title}") secara otomatis?
+                      <h4 className="text-sm font-bold mb-2">{t.linkSesiHabis || "Link Sesi Habis"}</h4>
+                      <p className="text-xs text-[rgb(var(--foreground))]/60 mb-6 font-medium leading-relaxed">
+                        {t.linkExpiredDesc || `Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini ("${reDownloadItem.title}") secara otomatis?`}
                       </p>
                       <div className="flex gap-2">
                         <button 
                           onClick={() => setReDownloadItem(null)}
-                          className="flex-1 py-2 text-xs font-medium border border-[rgb(var(--foreground))]/10 rounded-lg hover:bg-[rgb(var(--foreground))]/5"
+                          className="flex-1 py-3 text-xs font-bold border border-[rgb(var(--foreground))]/10 rounded-xl hover:bg-[rgb(var(--foreground))]/5 transition-colors"
                         >
-                          Batal
+                          {t.batal || "Batal"}
                         </button>
                         <button 
                           onClick={handleReDownload}
-                          className="flex-1 py-2 text-xs font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-lg shadow-green-500/20"
+                          className="flex-1 py-3 text-xs font-bold bg-green-500 text-white rounded-xl hover:bg-green-600 shadow-lg shadow-green-500/20 transition-all active:scale-95"
                         >
-                          Ya, Download Ulang
+                          {t.yaDownloadUlang || "Ya, Download Ulang"}
                         </button>
                       </div>
                     </motion.div>
