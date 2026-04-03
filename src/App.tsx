@@ -293,10 +293,10 @@ export default function App() {
     audio.play().catch(e => console.error('Error playing sound:', e));
   };
 
-  const addToast = (message: string, type: 'success' | 'info' | 'error' = 'info') => {
+  const addToast = (message: string, type: 'success' | 'info' | 'error' = 'info', playSound: boolean = true) => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
-    playNotificationSound();
+    if (playSound) playNotificationSound();
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 3000);
@@ -448,7 +448,7 @@ export default function App() {
     localStorage.setItem('showDownloadConfirmation', draftSettings.showDownloadConfirmation.toString());
     localStorage.setItem('language', draftSettings.language);
     
-    addToast('Settings saved successfully', 'success');
+    addToast('Settings saved successfully', 'success', false);
     setActiveTab('download');
   };
 
@@ -763,7 +763,7 @@ export default function App() {
                         >
                           {toast.type === 'success' ? <Check className="w-4 h-4" /> : 
                            toast.type === 'error' ? <AlertCircle className="w-4 h-4" /> : 
-                           <Bell className="w-4 h-4" />}
+                           <div className="w-4 h-4 bg-blue-500 rounded-full" />}
                           <span className="text-sm font-medium">{toast.message}</span>
                         </motion.div>
                       ))}
@@ -976,7 +976,7 @@ export default function App() {
 
               <button
                 type="submit"
-                disabled={isLoading || !url || (format === 'video' && !quality)}
+                disabled={isLoading || !url || (format === 'video' && !quality && !availableResolutions.length)}
                 className="w-full bg-[rgb(var(--foreground))] hover:bg-[rgb(var(--foreground))]/90 text-[rgb(var(--background))] font-medium py-2.5 rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
@@ -1265,7 +1265,7 @@ export default function App() {
                             onClick={() => {
                               if (item.url) {
                                 downloadFile(item.url, `${item.title || 'download'}.${item.format === 'mp3' ? 'mp3' : 'mp4'}`);
-                                addToast('Downloading from history...', 'info');
+                                addToast('Downloading from history...', 'info', false);
                               }
                             }}
                             disabled={!item.url}
