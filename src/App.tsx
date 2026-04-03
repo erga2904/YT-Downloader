@@ -727,24 +727,28 @@
       abortControllerRef.current = new AbortController();
 
       try {
+        const payload = { 
+          url, 
+          format, 
+          quality: quality || '720', 
+          downloadSubtitles, 
+          embedSubtitles, 
+          downloadTranscript, 
+          autoStart, 
+          bitrate, 
+          frameRate, 
+          codec, 
+          audioBitrate, 
+          sampleRate,
+          useMirror: retryCount > 0 
+        };
+        
+        console.log('Sending download request:', payload);
+
         const response = await fetch('/api/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            url, 
-            format, 
-            quality, 
-            downloadSubtitles, 
-            embedSubtitles, 
-            downloadTranscript, 
-            autoStart, 
-            bitrate, 
-            frameRate, 
-            codec, 
-            audioBitrate, 
-            sampleRate,
-            useMirror: retryCount > 0 
-          }),
+          body: JSON.stringify(payload),
           signal: abortControllerRef.current.signal
         });
 
