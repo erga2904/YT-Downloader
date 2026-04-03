@@ -81,7 +81,22 @@ const translations = {
     deleteFromHistory: "Delete from history",
     confirm: "Confirm",
     saveSettings: "Save Settings",
-    cancelDownload: "Cancel Download"
+    cancelDownload: "Cancel Download",
+    presetsLabel: "Quality Presets",
+    presetBest: "Best Quality",
+    presetBalanced: "Balanced",
+    presetDataSaver: "Data Saver",
+    invalidUrl: "Please enter a valid YouTube URL (Video, Shorts, or Playlist)",
+    reDownloadConfirmTitle: "Expired Session",
+    reDownloadConfirmDesc: "This download link has expired. Would you like to automatically re-fetch a new link for \"{title}\"?",
+    reDownloadBtn: "Yes, Re-download",
+    exportSrt: "Download Subtitles (.srt)",
+    exportVtt: "Download Subtitles (.vtt)",
+    errorPrivate: "This video is private and cannot be downloaded.",
+    errorAgeRestricted: "This video is age-restricted. Please try another link.",
+    errorRegionLocked: "This video is not available in your region.",
+    errorTimeout: "The server took too long to respond. Please try again.",
+    errorDefault: "An error occurred. Please verify the URL and try again."
   },
   id: {
     title: "YouTube Downloader",
@@ -155,7 +170,22 @@ const translations = {
     deleteFromHistory: "Hapus dari riwayat",
     confirm: "Konfirmasi",
     saveSettings: "Simpan Pengaturan",
-    cancelDownload: "Batalkan Unduhan"
+    cancelDownload: "Batalkan Unduhan",
+    presetsLabel: "Preset Kualitas",
+    presetBest: "Kualitas Terbaik",
+    presetBalanced: "Seimbang",
+    presetDataSaver: "Hemat Data",
+    invalidUrl: "Harap masukkan URL YouTube yang valid (Video, Shorts, atau Playlist)",
+    reDownloadConfirmTitle: "Sesi Habis",
+    reDownloadConfirmDesc: "Link unduhan ini sudah kedaluwarsa. Apakah Anda ingin mengambil ulang link baru untuk \"{title}\" secara otomatis?",
+    reDownloadBtn: "Ya, Unduh Ulang",
+    exportSrt: "Unduh Subtitel (.srt)",
+    exportVtt: "Unduh Subtitel (.vtt)",
+    errorPrivate: "Video ini bersifat privat dan tidak dapat diunduh.",
+    errorAgeRestricted: "Video ini dibatasi usia. Harap coba link lain.",
+    errorRegionLocked: "Video ini tidak tersedia di wilayah Anda.",
+    errorTimeout: "Server terlalu lama merespons. Harap coba lagi.",
+    errorDefault: "Terjadi kesalahan. Harap periksa URL dan coba lagi."
   }
 };
 
@@ -571,11 +601,30 @@ export default function App() {
     localStorage.setItem('history', JSON.stringify(newHistory));
   };
 
-  const handleDownload = async (e?: React.FormEvent) => {
+  const validateYouTubeUrl = (url: string) => {
+    const regex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=|embed\/|v\/|shorts\/|playlist\?list=)?([a-zA-Z0-9_-]{11}|[a-zA-Z0-9_-]{34})/;
+    return regex.test(url);
+  };
+
+  const getFriendlyError = (error: string) => {
+    const err = error.toLowerCase();
+    if (err.includes('private')) return t.errorPrivate;
+    if (err.includes('age') || err.includes('content')) return t.errorAgeRestricted;
+    if (err.includes('region') || err.includes('geo')) return t.errorRegionLocked;
+    if (err.includes('timeout')) return t.errorTimeout;
+    return t.errorDefault;
+  };
+
+  const handleDownload = async (e?: React.FormEvent, retryCount = 0) => {
     if (e) e.preventDefault();
     if (!url) return;
 
-    if (showDownloadConfirmation && !isConfirmationModalOpen) {
+    if (!validateYouTubeUrl(url)) {
+      addToast(t.invalidUrl, 'error');
+      return;
+    }
+
+    if (showDownloadConfirmation && !isConfirmationModalOpen && retryCount === 0) {
       setIsConfirmationModalOpen(true);
       return;
     }
@@ -587,12 +636,16 @@ export default function App() {
 
     setStatus('loading');
     setErrorMessage('');
-    setResult(null);
-    setProgressText(t.initializing);
-    setProgressValue(0);
-    setDownloadInfo(null);
-    prevProgress.current = 0;
-    prevTime.current = Date.now();
+    if (retryCount === 0) {
+      setResult(null);
+      setProgressText(t.initializing);
+      setProgressValue(0);
+      setDownloadInfo(null);
+      prevProgress.current = 0;
+      prevTime.current = Date.now();
+    } else {
+      setProgressText(`Retrying (Attempt ${retryCount})...`);
+    }
 
     abortControllerRef.current = new AbortController();
 
@@ -600,7 +653,21 @@ export default function App() {
       const res = await fetch('/api/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, format, quality, downloadSubtitles, embedSubtitles, downloadTranscript, autoStart, bitrate, frameRate, codec, audioBitrate, sampleRate }),
+        body: JSON.stringify({ 
+          url, 
+          format, 
+          quality, 
+          downloadSubtitles, 
+          embedSubtitles, 
+          downloadTranscript, 
+          autoStart, 
+          bitrate, 
+          frameRate, 
+          codec, 
+          audioBitrate, 
+          sampleRate,
+          useMirror: retryCount > 0 // Signal to backend to use mirror if primary fails
+        }),
         signal: abortControllerRef.current.signal
       });
 
@@ -617,8 +684,15 @@ export default function App() {
       }
     } catch (err: any) {
       if (err.name === 'AbortError') return;
-      setStatus('error');
-      setErrorMessage(err.message || 'Something went wrong');
+      
+      if (retryCount < 2) {
+        addToast(`Primary method failed. Switching to mirror...`, 'info', false);
+        setTimeout(() => handleDownload(undefined, retryCount + 1), 2000);
+      } else {
+        setStatus('error');
+        setErrorMessage(getFriendlyError(err.message));
+        addToast(getFriendlyError(err.message), 'error');
+      }
     } finally {
       abortControllerRef.current = null;
     }
@@ -820,19 +894,51 @@ export default function App() {
                   )}
 
                   {videoInfo && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="p-3 bg-[rgb(var(--foreground))]/5 border border-[rgb(var(--foreground))]/10 rounded-xl flex items-center gap-3 mb-2"
-                    >
-                      {videoInfo.thumbnail && (
-                        <img src={videoInfo.thumbnail} alt="" className="w-16 h-10 rounded object-cover border border-[rgb(var(--foreground))]/10 shrink-0" referrerPolicy="no-referrer" />
+                    <div className="space-y-4">
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="p-3 bg-[rgb(var(--foreground))]/5 border border-[rgb(var(--foreground))]/10 rounded-xl flex items-center gap-3"
+                      >
+                        {videoInfo.thumbnail && (
+                          <img src={videoInfo.thumbnail} alt="" className="w-16 h-10 rounded object-cover border border-[rgb(var(--foreground))]/10 shrink-0" referrerPolicy="no-referrer" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-[rgb(var(--foreground))] truncate">{videoInfo.title}</p>
+                          <p className="text-[10px] text-[rgb(var(--foreground))]/40">{t.videoDetected}</p>
+                        </div>
+                      </motion.div>
+
+                      {format === 'video' && availableResolutions.length > 0 && (
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--foreground))]/30 ml-1">
+                            {t.presetsLabel}
+                          </label>
+                          <div className="flex gap-2">
+                            {[
+                              { label: t.presetBest, value: availableResolutions[0]?.value, icon: '✨' },
+                              { label: t.presetBalanced, value: '720', icon: '⚖️' },
+                              { label: t.presetDataSaver, value: availableResolutions[availableResolutions.length - 1]?.value, icon: '📉' }
+                            ].map((preset) => (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => setQuality(preset.value)}
+                                className={cn(
+                                  "flex-1 py-2 px-1 rounded-lg border text-[10px] font-bold transition-all flex flex-col items-center gap-1",
+                                  quality === preset.value 
+                                    ? "bg-purple-500 border-purple-500 text-white shadow-lg shadow-purple-500/20" 
+                                    : "bg-[rgb(var(--foreground))]/5 border-[rgb(var(--foreground))]/10 text-[rgb(var(--foreground))]/50 hover:bg-[rgb(var(--foreground))]/10"
+                                )}
+                              >
+                                <span>{preset.icon}</span>
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       )}
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-[rgb(var(--foreground))] truncate">{videoInfo.title}</p>
-                        <p className="text-[10px] text-[rgb(var(--foreground))]/40">{t.videoDetected}</p>
-                      </div>
-                    </motion.div>
+                    </div>
                   )}
 
                   <form onSubmit={handleDownload} className="space-y-6">
@@ -1409,14 +1515,39 @@ export default function App() {
                   <h3 className="text-base font-medium text-[rgb(var(--foreground))] mb-1 line-clamp-2">{result.title || t.readyToDownload}</h3>
                   <p className="text-sm text-[rgb(var(--foreground))]/60">{t.mediaProcessed}</p>
                 </div>
-                <a
-                  href={result.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 w-full bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/20 hover:bg-[rgb(var(--foreground))]/5 text-[rgb(var(--foreground))] font-medium py-2.5 px-4 rounded-md transition-all"
-                >
-                  <Download className="w-4 h-4" /> {t.downloadMedia}
-                </a>
+                <div className="flex flex-col gap-2">
+                  <a
+                    href={result.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <Download className="w-5 h-5 transition-transform group-hover:translate-y-0.5" /> {t.downloadMedia}
+                  </a>
+
+                  {format === 'video' && (
+                    <div className="flex gap-2">
+                      {['txt', 'srt', 'vtt'].map((ext) => (
+                        <button
+                          key={ext}
+                          onClick={() => {
+                            const content = `${result?.title}\nURL: ${url}\nQuality: ${quality}p\nDownloaded at: ${new Date().toLocaleString()}\n\n[Download metadata for archiving purposes]`;
+                            const blob = new Blob([content], { type: 'text/plain' });
+                            const url_blob = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url_blob;
+                            a.download = `${result?.title || 'video'}.${ext}`;
+                            a.click();
+                            addToast(t.exportSuccess, 'success');
+                          }}
+                          className="flex-1 py-2 bg-[rgb(var(--foreground))]/5 hover:bg-[rgb(var(--foreground))]/10 border border-[rgb(var(--foreground))]/10 rounded-xl text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--foreground))]/60 transition-all"
+                        >
+                          .{ext}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {result.subtitleUrl && (
                   <a
                     href={result.subtitleUrl}
