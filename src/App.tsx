@@ -232,14 +232,13 @@
           q: "Apakah layanan ini gratis?",
           a: "Ya, ini adalah proyek portofolio dan dapat digunakan secara gratis untuk keperluan edukasi dan pribadi."
         }
-        ],
-        tutup: "Tutup",
-        batal: "Batal",
-        yaDownloadUlang: "Ya, Download Ulang",
-        linkSesiHabis: "Link Sesi Habis",
-        linkExpiredDesc: "Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini secara otomatis?",
-        sortingBySize: "Diurutkan berdasarkan ukuran (terbesar dulu)"
-      }
+      ],
+      tutup: "Tutup",
+      batal: "Batal",
+      yaDownloadUlang: "Ya, Download Ulang",
+      linkSesiHabis: "Link Sesi Habis",
+      linkExpiredDesc: "Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini secara otomatis?",
+      sortingBySize: "Diurutkan berdasarkan ukuran (terbesar dulu)"
     }
   };
 
