@@ -680,15 +680,6 @@ export default function App() {
               {t.downloadTab}
             </button>
             <button
-              onClick={() => setActiveTab('settings')}
-              className={cn(
-                "pb-3 px-4 text-sm font-medium transition-all duration-200 hover:bg-[rgb(var(--foreground))]/5 active:bg-[rgb(var(--foreground))]/10 rounded-t-md",
-                activeTab === 'settings' ? "text-[rgb(var(--foreground))] border-b-2 border-[rgb(var(--foreground))]" : "text-[rgb(var(--foreground))]/50"
-              )}
-            >
-              {t.settingsTab}
-            </button>
-            <button
               onClick={() => setActiveTab('notifications')}
               className={cn(
                 "pb-3 px-4 text-sm font-medium transition-all duration-200 hover:bg-[rgb(var(--foreground))]/5 active:bg-[rgb(var(--foreground))]/10 rounded-t-md relative",
@@ -701,6 +692,19 @@ export default function App() {
               )}
             </button>
             <div className="ml-auto flex items-center gap-2 pb-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab('settings')}
+                className={cn(
+                  "p-1.5 rounded-md transition-all flex items-center gap-2",
+                  activeTab === 'settings'
+                    ? "bg-[rgb(var(--foreground))]/10 text-[rgb(var(--foreground))]"
+                    : "text-[rgb(var(--foreground))]/30 hover:text-[rgb(var(--foreground))]/50 hover:bg-[rgb(var(--foreground))]/5"
+                )}
+                title={t.settingsTab}
+              >
+                <Settings2 className="w-4 h-4" />
+              </button>
               <button
                 type="button"
                 onClick={() => {
