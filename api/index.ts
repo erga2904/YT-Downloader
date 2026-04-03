@@ -96,10 +96,12 @@ app.post('/api/download', async (req, res) => {
     let loaderFormat = format === 'mp3' ? 'mp3' : (quality || '720');
     
     // Map high resolutions to loader.to format strings if needed
+    // Loader.to uses '4k' for 2160p and '8k' for 4320p
+    // Note: YouTube 4K often requires WEBM container for full resolution
     if (format === 'video') {
       if (quality === '2160') loaderFormat = '4k';
-      else if (quality === '1440') loaderFormat = '8k'; // Some mirrors use 8k label for 1440p+ or specific codes
-      // Note: Loader.to usually uses '4k' for 2160p and '1440' or '8k' for others
+      else if (quality === '1440') loaderFormat = '1440'; 
+      else if (quality === '4320') loaderFormat = '8k';
     }
     
     // Use the native fetch for Vercel/Node 18+
@@ -154,13 +156,3 @@ app.get('/api/progress', async (req, res) => {
 
     const data = await progressRes.json();
     res.json(data);
-  } catch (error: any) {
-    console.error('Progress API error:', error);
-    res.status(500).json({ 
-      error: 'Internal server error while fetching progress',
-      message: error.message 
-    });
-  }
-});
-
-export default app;
