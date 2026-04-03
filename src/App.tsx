@@ -731,7 +731,7 @@ export default function App() {
         });
         setStatus('success');
         const filename = `${title || 'download'}.${format === 'mp3' ? 'mp3' : 'mp4'}`;
-        downloadFile(data.download_url, filename);
+        // downloadFile(data.download_url, filename); // Removed auto-download
         addToast('Download completed!', 'success');
         addToHistory({ url: data.download_url, originalUrl: url, title, thumbnail, format, quality });
         setDownloadInfo(null);
@@ -827,7 +827,7 @@ export default function App() {
                 className={cn(
                   "p-1.5 rounded-md transition-all flex items-center gap-2",
                   isPrivateMode 
-                    ? "bg-purple-500/10 text-purple-500 border border-purple-500/20" 
+                    ? "bg-[rgb(var(--foreground))]/10 text-[rgb(var(--foreground))] border border-[rgb(var(--foreground))]/20" 
                     : "text-[rgb(var(--foreground))]/30 hover:text-[rgb(var(--foreground))]/50 hover:bg-[rgb(var(--foreground))]/5"
                 )}
                 title={isPrivateMode ? t.privateModeActive : t.privateModeSetting}
@@ -881,14 +881,14 @@ export default function App() {
                     <motion.div 
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center gap-3 mb-2"
+                      className="p-3 bg-[rgb(var(--foreground))]/10 border border-[rgb(var(--foreground))]/20 rounded-xl flex items-center gap-3 mb-2"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
-                        <Ghost className="w-4 h-4 text-purple-500" />
+                      <div className="w-8 h-8 rounded-lg bg-[rgb(var(--foreground))]/20 flex items-center justify-center shrink-0">
+                        <Ghost className="w-4 h-4 text-[rgb(var(--foreground))]" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-purple-500 uppercase tracking-wider">{t.privateModeActive}</p>
-                        <p className="text-[10px] text-purple-500/60 truncate">{t.privateModeDesc}</p>
+                        <p className="text-xs font-bold text-[rgb(var(--foreground))] uppercase tracking-wider">{t.privateModeActive}</p>
+                        <p className="text-[10px] text-[rgb(var(--foreground))]/60 truncate">{t.privateModeDesc}</p>
                       </div>
                     </motion.div>
                   )}
@@ -927,7 +927,7 @@ export default function App() {
                                 className={cn(
                                   "flex-1 py-2 px-1 rounded-lg border text-[10px] font-bold transition-all flex flex-col items-center gap-1",
                                   quality === preset.value 
-                                    ? "bg-purple-500 border-purple-500 text-white shadow-lg shadow-purple-500/20" 
+                                    ? "bg-[rgb(var(--foreground))] border-[rgb(var(--foreground))] text-[rgb(var(--background))] shadow-lg shadow-[rgb(var(--foreground))]/10" 
                                     : "bg-[rgb(var(--foreground))]/5 border-[rgb(var(--foreground))]/10 text-[rgb(var(--foreground))]/50 hover:bg-[rgb(var(--foreground))]/10"
                                 )}
                               >
@@ -1037,7 +1037,7 @@ export default function App() {
                         className={cn(
                           "w-10 h-5 rounded-full transition-all flex items-center p-0.5",
                           !hasSubtitles ? "bg-[rgb(var(--foreground))]/5 cursor-not-allowed opacity-50" : 
-                          downloadSubtitles ? "bg-purple-500 justify-end" : "bg-[rgb(var(--foreground))]/20 justify-start"
+                          downloadSubtitles ? "bg-[rgb(var(--foreground))] justify-end" : "bg-[rgb(var(--foreground))]/20 justify-start"
                         )}
                       >
                         <motion.div layout className="w-4 h-4 bg-[rgb(var(--background))] rounded-full shadow-sm" />
@@ -1070,7 +1070,7 @@ export default function App() {
                             onClick={() => setEmbedSubtitles(!embedSubtitles)}
                             className={cn(
                               "w-8 h-4 rounded-full transition-all flex items-center p-0.5",
-                              embedSubtitles ? "bg-purple-500 justify-end" : "bg-[rgb(var(--foreground))]/20 justify-start"
+                              embedSubtitles ? "bg-[rgb(var(--foreground))] justify-end" : "bg-[rgb(var(--foreground))]/20 justify-start"
                             )}
                           >
                             <motion.div layout className="w-3 h-3 bg-[rgb(var(--background))] rounded-full shadow-sm" />
@@ -1091,7 +1091,7 @@ export default function App() {
                             onClick={() => setDownloadTranscript(!downloadTranscript)}
                             className={cn(
                               "w-8 h-4 rounded-full transition-all flex items-center p-0.5",
-                              downloadTranscript ? "bg-purple-500 justify-end" : "bg-[rgb(var(--foreground))]/20 justify-start"
+                              downloadTranscript ? "bg-[rgb(var(--foreground))] justify-end" : "bg-[rgb(var(--foreground))]/20 justify-start"
                             )}
                           >
                             <motion.div layout className="w-3 h-3 bg-[rgb(var(--background))] rounded-full shadow-sm" />
@@ -1190,11 +1190,11 @@ export default function App() {
                     onClick={() => setDraftSettings(prev => ({ ...prev, isPrivateMode: !prev.isPrivateMode }))}
                     className={cn(
                       "w-10 h-5 rounded-full transition-colors flex items-center p-0.5 hover:bg-[rgb(var(--foreground))]/10 active:bg-[rgb(var(--foreground))]/20",
-                      draftSettings.isPrivateMode ? "bg-purple-500 justify-end" : "bg-[rgb(var(--foreground))]/20 justify-start"
+                      draftSettings.isPrivateMode ? "bg-[rgb(var(--foreground))] justify-end" : "bg-[rgb(var(--foreground))]/20 justify-start"
                     )}
                   >
                     <motion.div layout className="w-4 h-4 bg-[rgb(var(--background))] rounded-full shadow-sm flex items-center justify-center">
-                      {draftSettings.isPrivateMode && <Ghost className="w-2.5 h-2.5 text-purple-500" />}
+                      {draftSettings.isPrivateMode && <Ghost className="w-2.5 h-2.5 text-[rgb(var(--foreground))]" />}
                     </motion.div>
                   </button>
                 </div>
@@ -1522,7 +1522,7 @@ export default function App() {
                     href={result.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="inline-flex items-center justify-center gap-2 w-full bg-[rgb(var(--foreground))] hover:bg-[rgb(var(--foreground))]/90 text-[rgb(var(--background))] font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-[rgb(var(--foreground))]/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <Download className="w-5 h-5 transition-transform group-hover:translate-y-0.5" /> {t.downloadMedia}
                   </a>
@@ -1578,7 +1578,7 @@ export default function App() {
                   <div className="space-y-3">
                     <button
                       onClick={() => setShowTranscript(!showTranscript)}
-                      className="inline-flex items-center justify-center gap-2 w-full bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-500 font-medium py-2.5 px-4 rounded-md transition-all"
+                      className="inline-flex items-center justify-center gap-2 w-full bg-[rgb(var(--foreground))]/10 border border-[rgb(var(--foreground))]/20 hover:bg-[rgb(var(--foreground))]/20 text-[rgb(var(--foreground))] font-medium py-2.5 px-4 rounded-md transition-all"
                     >
                       <Subtitles className="w-4 h-4" /> {t.viewTranscriptBtn}
                     </button>
@@ -1593,7 +1593,7 @@ export default function App() {
                           <span className="text-xs font-bold uppercase tracking-wider text-[rgb(var(--foreground))]/40">Transcript</span>
                           <button 
                             onClick={togglePlayback}
-                            className="p-1.5 rounded-full bg-purple-500 text-white hover:bg-purple-600 transition-colors"
+                            className="p-1.5 rounded-full bg-[rgb(var(--foreground))] text-[rgb(var(--background))] hover:bg-[rgb(var(--foreground))]/90 transition-colors"
                           >
                             {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                           </button>
@@ -1609,14 +1609,14 @@ export default function App() {
                                 key={idx} 
                                 className={cn(
                                   "transition-all duration-300 rounded-lg p-2 cursor-pointer hover:bg-[rgb(var(--foreground))]/5",
-                                  isActive ? "active-transcript-line bg-purple-500/10 border-l-2 border-purple-500 pl-3" : "opacity-40"
+                                  isActive ? "active-transcript-line bg-[rgb(var(--foreground))]/10 border-l-2 border-[rgb(var(--foreground))] pl-3" : "opacity-40"
                                 )}
                                 onClick={() => {
                                   setCurrentTime(line.start);
                                   if (!isPlaying) togglePlayback();
                                 }}
                               >
-                                <span className="text-[10px] font-mono text-purple-500 block mb-1">
+                                <span className="text-[10px] font-mono text-[rgb(var(--foreground))] block mb-1">
                                   {Math.floor(line.start / 60)}:{Math.floor(line.start % 60).toString().padStart(2, '0')}
                                 </span>
                                 <p className={cn(
