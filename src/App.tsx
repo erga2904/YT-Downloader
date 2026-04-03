@@ -285,7 +285,7 @@ export default function App() {
       if (!res.ok) throw new Error(data.error || 'Failed to re-fetch');
 
       // Start polling
-      pollProgress(data.progress_url, data.title, data.thumbnail);
+      await pollProgress(data.progress_url, data.title, data.thumbnail);
       setReDownloadItem(null);
     } catch (err: any) {
       addToast(err.message, 'error');
@@ -1453,18 +1453,50 @@ export default function App() {
                       <p className="text-xs text-[rgb(var(--foreground))]/60 mb-6 font-medium leading-relaxed">
                         {t.linkExpiredDesc || `Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini ("${reDownloadItem.title}") secara otomatis?`}
                       </p>
+
+                      {isReDownloading && (
+                        <div className="mb-6 space-y-2">
+                          <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--foreground))]/40">
+                            <span>{progressText}</span>
+                            <span>{Math.round(progressValue)}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-[rgb(var(--foreground))]/5 rounded-full overflow-hidden">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${progressValue}%` }}
+                              className="h-full bg-[rgb(var(--foreground))]"
+                            />
+                          </div>
+                          {downloadInfo && (
+                            <div className="flex justify-between text-[9px] text-[rgb(var(--foreground))]/30 italic">
+                              <span>{downloadInfo.speed}</span>
+                              <span>{downloadInfo.remaining}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="flex gap-2">
                         <button 
-                          onClick={() => setReDownloadItem(null)}
+                          onClick={() => {
+                            if (isReDownloading) handleCancel();
+                            setReDownloadItem(null);
+                          }}
                           className="flex-1 py-3 text-xs font-bold border border-[rgb(var(--foreground))]/10 rounded-xl hover:bg-[rgb(var(--foreground))]/5 transition-colors"
                         >
-                          {t.batal || "Batal"}
+                          {isReDownloading ? t.cancelDownload : (t.batal || "Batal")}
                         </button>
                         <button 
                           onClick={handleReDownload}
-                          className="flex-1 py-3 text-xs font-bold bg-green-500 text-white rounded-xl hover:bg-green-600 shadow-lg shadow-green-500/20 transition-all active:scale-95"
+                          disabled={isReDownloading}
+                          className="flex-1 py-3 text-xs font-bold bg-[rgb(var(--foreground))] text-[rgb(var(--background))] rounded-xl hover:bg-[rgb(var(--foreground))]/90 shadow-lg shadow-[rgb(var(--foreground))]/10 transition-all active:scale-95 disabled:opacity-50"
                         >
-                          {t.yaDownloadUlang || "Ya, Download Ulang"}
+                          {isReDownloading ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              {t.processing}
+                            </div>
+                          ) : (t.yaDownloadUlang || "Ya, Download Ulang")}
                         </button>
                       </div>
                     </motion.div>
