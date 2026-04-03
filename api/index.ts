@@ -42,6 +42,8 @@ app.post('/api/info', async (req, res) => {
         hasSubtitles: subtitleTracks.length > 0,
         subtitles: subtitleTracks,
         resolutions: uniqueResolutions.length > 0 ? uniqueResolutions : [
+          { label: "4K (2160p)", value: "2160" },
+          { label: "1440p (QHD)", value: "1440" },
           { label: "1080p (Full HD)", value: "1080" },
           { label: "720p (HD)", value: "720" },
           { label: "480p (SD)", value: "480" },
@@ -65,6 +67,8 @@ app.post('/api/info', async (req, res) => {
           thumbnails: fallbackThumbs,
           hasSubtitles: false,
           resolutions: [
+            { label: "4K (2160p)", value: "2160" },
+            { label: "1440p (QHD)", value: "1440" },
             { label: "1080p (Full HD)", value: "1080" },
             { label: "720p (HD)", value: "720" },
             { label: "480p (SD)", value: "480" },
