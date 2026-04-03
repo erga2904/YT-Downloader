@@ -339,6 +339,7 @@ export default function App() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isReDownloading, setIsReDownloading] = useState(false);
   const [reDownloadItem, setReDownloadItem] = useState<any>(null);
+  const [reDownloadViewport, setReDownloadViewport] = useState({ top: 0, height: 0 });
   const pollTimeoutRef = React.useRef<any>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const [notifications, setNotifications] = useState<any[]>(() => {
@@ -1413,6 +1414,7 @@ export default function App() {
                                   throw new Error('Link expired');
                                 }
                               } catch (e) {
+                                setReDownloadViewport({ top: window.scrollY, height: window.innerHeight });
                                 setReDownloadItem({ ...item });
                               }
                             }}
@@ -1442,7 +1444,10 @@ export default function App() {
                 )}
 
                 {reDownloadItem && typeof document !== 'undefined' && createPortal(
-                  <div className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div
+                    className="absolute left-0 right-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+                    style={{ top: reDownloadViewport.top, height: reDownloadViewport.height || window.innerHeight }}
+                  >
                     <motion.div 
                       key="redownload-modal"
                       initial={{ opacity: 0, scale: 0.9, y: 20 }}
