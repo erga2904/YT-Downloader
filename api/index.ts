@@ -96,24 +96,36 @@ app.post('/api/download', async (req, res) => {
     const { url, format, quality } = req.body;
     if (!url) return res.status(400).json({ error: 'URL is required' });
 
-    // Sanitize and prepare format/quality for loader.to
-    // format can be 'mp3' or 'video'
-    // quality is typically '1080', '720', etc.
-    // loader.to uses specific formats for high res
+    // Mapping internal quality logic (1080, 720, etc.) to loader.to format codes
     let loaderFormat = format === 'mp3' ? 'mp3' : (quality || '720');
     
-    // Map high resolutions to loader.to format strings if needed
-    // Loader.to uses standard codes for <= 1080p
-    let loaderFormat = format === 'mp3' ? 'mp3' : (quality || '720');
+    // Explicit mapping for loader.to (ensuring correct codes for resolutions)
+    if (format !== 'mp3') {
+      const q = parseInt(quality);
+      if (q === 1080) loaderFormat = '1080';
+      else if (q === 720) loaderFormat = '720';
+      else if (q === 480) loaderFormat = '480';
+      else if (q === 360) loaderFormat = '360';
+      else loaderFormat = '720'; // default
+    }
     
     // Use the native fetch for Vercel/Node 18+
     const fetchUrl = `https://loader.to/ajax/download.php?format=${loaderFormat}&url=${encodeURIComponent(url)}`;
     
-    const loaderRes = await fetch(fetchUrl);
+    // Adding custom headers to avoid detection as a simple bot
+    const loaderRes = await fetch(fetchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Referer': 'https://loader.to/'
+      }
+    });
     
     // Check if response is ok
     if (!loaderRes.ok) {
-      throw new Error(`Loader.to responded with status: ${loaderRes.status}`);
+      const errorText = await loaderRes.text();
+      console.error(`Loader.to error (${loaderRes.status}):`, errorText);
+      throw new Error(`External server returned ${loaderRes.status}`);
     }
 
     const data: any = await loaderRes.json();
@@ -147,12 +159,22 @@ app.get('/api/progress', async (req, res) => {
     if (!url) return res.status(400).json({ error: 'Progress URL is required' });
 
     console.log('Polling progress for:', url);
-    const progressRes = await fetch(url as string);
+    
+    // Add User-Agent and Referer to match direct browser requests 
+    const progressRes = await fetch(url as string, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Referer': 'https://loader.to/'
+      }
+    });
     
     if (!progressRes.ok) {
-      console.error(`Progress server returned ${progressRes.status}`);
+      const errorText = await progressRes.text();
+      console.error(`Progress server error (${progressRes.status}):`, errorText);
       return res.status(progressRes.status).json({ 
-        error: 'Failed to fetch progress from download server' 
+        error: 'Failed to fetch progress',
+        details: errorText.slice(0, 100) 
       });
     }
 
