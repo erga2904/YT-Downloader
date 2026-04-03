@@ -40,6 +40,7 @@ app.post('/api/info', async (req, res) => {
             value: res ? res[0] : qStr
           };
         })
+        .filter(res => parseInt(res.value) <= 1080) // Limit to 1080p max
         .sort((a, b) => parseInt(b.value) - parseInt(a.value));
 
         return res.json({
@@ -49,8 +50,6 @@ app.post('/api/info', async (req, res) => {
         hasSubtitles: subtitleTracks.length > 0,
         subtitles: subtitleTracks,
         resolutions: uniqueResolutions.length > 0 ? uniqueResolutions : [
-          { label: "4K (2160p)", value: "2160" },
-          { label: "1440p (QHD)", value: "1440" },
           { label: "1080p (Full HD)", value: "1080" },
           { label: "720p (HD)", value: "720" },
           { label: "480p (SD)", value: "480" },
@@ -76,8 +75,6 @@ app.post('/api/info', async (req, res) => {
           thumbnails: fallbackThumbs,
           hasSubtitles: false,
           resolutions: [
-            { label: "4K (2160p)", value: "2160" },
-            { label: "1440p (QHD)", value: "1440" },
             { label: "1080p (Full HD)", value: "1080" },
             { label: "720p (HD)", value: "720" },
             { label: "480p (SD)", value: "480" },
@@ -106,13 +103,8 @@ app.post('/api/download', async (req, res) => {
     let loaderFormat = format === 'mp3' ? 'mp3' : (quality || '720');
     
     // Map high resolutions to loader.to format strings if needed
-    // Loader.to uses '4k' for 2160p and '8k' for 4320p
-    // Note: YouTube 4K often requires WEBM container for full resolution
-    if (format === 'video') {
-      if (quality === '2160') loaderFormat = '4k';
-      else if (quality === '1440') loaderFormat = '1440'; 
-      else if (quality === '4320') loaderFormat = '8k';
-    }
+    // Loader.to uses standard codes for <= 1080p
+    let loaderFormat = format === 'mp3' ? 'mp3' : (quality || '720');
     
     // Use the native fetch for Vercel/Node 18+
     const fetchUrl = `https://loader.to/ajax/download.php?format=${loaderFormat}&url=${encodeURIComponent(url)}`;
