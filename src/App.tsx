@@ -259,7 +259,9 @@ export default function App() {
   const prevTime = React.useRef(Date.now());
   
   // Settings
-  const [activeTab, setActiveTab] = useState<'download' | 'settings' | 'notifications'>('download');
+  const [activeTab, setActiveTab] = useState<'download' | 'settings'>('download');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = React.useRef<HTMLDivElement>(null);
   const [autoStart, setAutoStart] = useState(() => localStorage.getItem('autoStart') === 'true');
   const [bitrate, setBitrate] = useState(() => localStorage.getItem('bitrate') || 'auto');
   const [frameRate, setFrameRate] = useState(() => localStorage.getItem('frameRate') || 'auto');
@@ -388,6 +390,17 @@ export default function App() {
     const timer = setTimeout(fetchInfo, 1000);
     return () => clearTimeout(timer);
   }, [url]);
+
+  // Click outside listener for dropdowns
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Sync draft settings when tab changes to settings
   React.useEffect(() => {
@@ -679,19 +692,72 @@ export default function App() {
             >
               {t.downloadTab}
             </button>
-            <button
-              onClick={() => setActiveTab('notifications')}
-              className={cn(
-                "pb-3 px-4 text-sm font-medium transition-all duration-200 hover:bg-[rgb(var(--foreground))]/5 active:bg-[rgb(var(--foreground))]/10 rounded-t-md relative",
-                activeTab === 'notifications' ? "text-[rgb(var(--foreground))] border-b-2 border-[rgb(var(--foreground))]" : "text-[rgb(var(--foreground))]/50"
-              )}
-            >
-              <Bell className="w-4 h-4" />
-              {notifications.some(n => !n.read) && (
-                <span className="absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[rgb(var(--background))]" />
-              )}
-            </button>
             <div className="ml-auto flex items-center gap-2 pb-3">
+              <div className="relative" ref={notificationRef}>
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className={cn(
+                    "p-1.5 rounded-md transition-all flex items-center relative",
+                    showNotifications
+                      ? "bg-[rgb(var(--foreground))]/10 text-[rgb(var(--foreground))]"
+                      : "text-[rgb(var(--foreground))]/30 hover:text-[rgb(var(--foreground))]/50 hover:bg-[rgb(var(--foreground))]/5"
+                  )}
+                  title="Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  {notifications.some(n => !n.read) && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[rgb(var(--background))]" />
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {showNotifications && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-80 bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/10 rounded-xl shadow-2xl z-[60] overflow-hidden"
+                    >
+                      <div className="p-4 border-b border-[rgb(var(--foreground))]/10 flex items-center justify-between bg-[rgb(var(--foreground))]/5">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-[rgb(var(--foreground))]/40">Notifications</h3>
+                        <button 
+                          onClick={() => {
+                            setNotifications(notifications.map(n => ({ ...n, read: true })));
+                            addToast('All marked as read', 'success');
+                          }}
+                          className="text-[10px] text-purple-500 hover:underline"
+                        >
+                          Mark all as read
+                        </button>
+                      </div>
+                      <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                        {notifications.length > 0 ? (
+                          notifications.map(notif => (
+                            <div 
+                              key={notif.id} 
+                              className={cn(
+                                "p-4 border-b border-[rgb(var(--foreground))]/5 last:border-0 transition-colors",
+                                notif.read ? "opacity-60" : "bg-purple-500/5"
+                              )}
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <h4 className="text-xs font-bold text-[rgb(var(--foreground))]">{notif.title}</h4>
+                                <span className="text-[9px] text-[rgb(var(--foreground))]/40">{new Date(notif.date).toLocaleDateString()}</span>
+                              </div>
+                              <p className="text-[11px] text-[rgb(var(--foreground))]/70 leading-relaxed">{notif.message}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-8 text-center">
+                            <p className="text-xs text-[rgb(var(--foreground))]/30 italic">No notifications</p>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <button
                 type="button"
                 onClick={() => setActiveTab('settings')}
@@ -1300,46 +1366,6 @@ export default function App() {
                 >
                   {t.saveSettings}
                 </button>
-              </div>
-            </div>
-          )}
-          {activeTab === 'notifications' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-[rgb(var(--foreground))] uppercase tracking-wider flex items-center gap-2">
-                  <Bell className="w-4 h-4" /> Notifications
-                </h3>
-                <button 
-                  onClick={() => {
-                    setNotifications(notifications.map(n => ({ ...n, read: true })));
-                    addToast('All notifications marked as read', 'success');
-                  }}
-                  className="text-[10px] text-[rgb(var(--foreground))]/40 hover:text-[rgb(var(--foreground))] transition-colors"
-                >
-                  Mark all as read
-                </button>
-              </div>
-              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-                {notifications.map(notif => (
-                  <div 
-                    key={notif.id} 
-                    className={cn(
-                      "p-4 rounded-xl border transition-all relative overflow-hidden",
-                      notif.read 
-                        ? "bg-[rgb(var(--foreground))]/5 border-[rgb(var(--foreground))]/10 opacity-60" 
-                        : "bg-[rgb(var(--foreground))]/10 border-purple-500/30 shadow-lg shadow-purple-500/5"
-                    )}
-                  >
-                    {!notif.read && <div className="absolute top-0 left-0 w-1 h-full bg-purple-500" />}
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="text-sm font-bold text-[rgb(var(--foreground))]">{notif.title}</h4>
-                      <span className="text-[10px] text-[rgb(var(--foreground))]/40">
-                        {new Date(notif.date).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-[rgb(var(--foreground))]/70 leading-relaxed">{notif.message}</p>
-                  </div>
-                ))}
               </div>
             </div>
           )}
