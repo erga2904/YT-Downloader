@@ -11,7 +11,14 @@ app.post('/api/info', async (req, res) => {
     if (!url) return res.status(400).json({ error: 'URL is required' });
 
     try {
-      const info = await ytdl.getInfo(url);
+      // Set options to bypass some basic bot detection
+      const info = await ytdl.getInfo(url, {
+        requestOptions: {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          }
+        }
+      });
       const formats = info.formats;
       
       const videoFormats = formats.filter(f => f.hasVideo);
@@ -50,19 +57,21 @@ app.post('/api/info', async (req, res) => {
           { label: "360p (Low)", value: "360" }
         ]
       });
-    } catch (ytdlError) {
+    } catch (ytdlError: any) {
+      console.error('ytdl-core error:', ytdlError.message);
       // Fallback loader.to - Return multiple resolutions even in fallback
       const loaderUrl = `https://loader.to/ajax/download.php?format=720&url=${encodeURIComponent(url)}`;
       try {
         const loaderRes = await fetch(loaderUrl);
+        if (!loaderRes.ok) throw new Error('Loader.to status: ' + loaderRes.status);
         const data: any = await loaderRes.json();
         
-        // Basic thumbnail extraction from URL if possible in fallback
-        let fallbackThumb = data.info?.image || null;
-        let fallbackThumbs = fallbackThumb ? [{ url: fallbackThumb, width: 1280, height: 720 }] : [];
+        const fallbackTitle = data.title || (data.info && data.info.title) || 'Download';
+        const fallbackThumb = data.info?.image || null;
+        const fallbackThumbs = fallbackThumb ? [{ url: fallbackThumb, width: 1280, height: 720 }] : [];
 
         return res.json({
-          title: data.title || 'Download',
+          title: fallbackTitle,
           thumbnail: fallbackThumb,
           thumbnails: fallbackThumbs,
           hasSubtitles: false,
@@ -75,8 +84,9 @@ app.post('/api/info', async (req, res) => {
             { label: "360p (Low)", value: "360" }
           ]
         });
-      } catch (fallbackErr) {
-        return res.status(500).json({ error: 'Failed to fetch video info' });
+      } catch (fallbackErr: any) {
+        console.error('Fallback error:', fallbackErr.message);
+        return res.status(500).json({ error: 'Failed to fetch video info', details: fallbackErr.message });
       }
     }
   } catch (error) {
@@ -156,3 +166,13 @@ app.get('/api/progress', async (req, res) => {
 
     const data = await progressRes.json();
     res.json(data);
+  } catch (error: any) {
+    console.error('Progress API error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error while fetching progress',
+      message: error.message 
+    });
+  }
+});
+
+export default app;
