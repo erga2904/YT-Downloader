@@ -97,7 +97,12 @@ const translations = {
     errorAgeRestricted: "This video is age-restricted. Please try another link.",
     errorRegionLocked: "This video is not available in your region.",
     errorTimeout: "The server took too long to respond. Please try again.",
-    errorDefault: "An error occurred. Please verify the URL and try again."
+    errorDefault: "An error occurred. Please verify the URL and try again.",
+    downloadThumbnail: "Download Thumbnail",
+    downloadPostMedia: "Download Post Media",
+    postMediaLabel: "Post Media",
+    previewThumbnail: "Preview Thumbnail",
+    selectThumbnailQuality: "Select Thumbnail Quality",
   },
   id: {
     title: "YouTube Downloader",
@@ -186,13 +191,18 @@ const translations = {
     errorAgeRestricted: "Video ini dibatasi usia. Harap coba link lain.",
     errorRegionLocked: "Video ini tidak tersedia di wilayah Anda.",
     errorTimeout: "Server terlalu lama merespons. Harap coba lagi.",
-    errorDefault: "Terjadi kesalahan. Harap periksa URL dan coba lagi."
+    errorDefault: "Terjadi kesalahan. Harap periksa URL dan coba lagi.",
+    downloadThumbnail: "Unduh Thumbnail",
+    downloadPostMedia: "Unduh Media Postingan",
+    postMediaLabel: "Media Postingan",
+    previewThumbnail: "Pratinjau Thumbnail",
+    selectThumbnailQuality: "Pilih Kualitas Thumbnail",
   }
 };
 
 function CustomSelect({ value, onChange, options, label, disabled, isOpen, onToggle, info, placeholder }: { value: string; onChange: (val: string) => void; options: { label: string; value: string }[]; label: string; disabled?: boolean; isOpen: boolean; onToggle: () => void; info?: string; placeholder?: string }) {
   return (
-<div className="relative space-y-2">
+  <div className="relative space-y-2">
       <div className="flex items-center gap-1.5">
         <label className="text-sm font-medium text-[rgb(var(--foreground))]/80">{label}</label>
         {info && (
@@ -246,8 +256,10 @@ export default function App() {
   const [hasSubtitles, setHasSubtitles] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [result, setResult] = useState<{ url: string; title?: string; thumbnail?: string; subtitleUrl?: string; transcriptUrl?: string; transcript?: { text: string; start: number; duration: number }[] } | null>(null);
+  const [result, setResult] = useState<{ url: string; title?: string; thumbnail?: string; subtitleUrl?: string; transcriptUrl?: string; transcript?: { text: string; start: number; duration: number }[]; thumbnails?: { url: string; width: number; height: number }[] } | null>(null);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [thumbnailQuality, setThumbnailQuality] = useState('');
+  const [isPostMedia, setIsPostMedia] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const transcriptScrollRef = React.useRef<HTMLDivElement>(null);
@@ -421,8 +433,13 @@ export default function App() {
         const data = await res.json();
         if (res.ok) {
           setAvailableResolutions(data.resolutions);
-          setVideoInfo({ title: data.title, thumbnail: data.thumbnail });
+          setVideoInfo({ title: data.title, thumbnail: data.thumbnail, thumbnails: data.thumbnails });
           setHasSubtitles(!!data.hasSubtitles);
+          setIsPostMedia(url.includes('/post/'));
+          
+          if (data.thumbnails && data.thumbnails.length > 0) {
+            setThumbnailQuality(data.thumbnails[data.thumbnails.length - 1].url);
+          }
           
           // If subtitles are available and user had them enabled, keep it, 
           // otherwise if not available, force disable
@@ -730,6 +747,7 @@ export default function App() {
           url: data.download_url, 
           title, 
           thumbnail, 
+          thumbnails: videoInfo?.thumbnails,
           subtitleUrl: data.subtitle_url,
           transcriptUrl: data.transcript_url,
           transcript: data.transcript 
@@ -1024,6 +1042,58 @@ export default function App() {
                   />
                 )}
               </div>
+
+              {/* Thumbnail Download Feature */}
+              {videoInfo?.thumbnails && videoInfo.thumbnails.length > 0 && (
+                <div className="space-y-4 p-4 bg-[rgb(var(--foreground))]/5 rounded-xl border border-[rgb(var(--foreground))]/10">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold text-[rgb(var(--foreground))]/80 flex items-center gap-2">
+                       {t.downloadThumbnail}
+                    </label>
+                  </div>
+                  <div className="flex gap-4 items-start">
+                    <img 
+                      src={thumbnailQuality || videoInfo.thumbnail} 
+                      className="w-24 h-14 object-cover rounded border border-[rgb(var(--foreground))]/10" 
+                      alt="Thumbnail Preview"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="flex-1 space-y-2">
+                      <CustomSelect
+                        label={t.selectThumbnailQuality}
+                        value={thumbnailQuality}
+                        onChange={setThumbnailQuality}
+                        isOpen={openDropdown === 'ThumbQuality'}
+                        onToggle={() => setOpenDropdown(openDropdown === 'ThumbQuality' ? null : 'ThumbQuality')}
+                        options={videoInfo.thumbnails.map(t => ({ 
+                          label: `${t.width}x${t.height}`, 
+                          value: t.url 
+                        })).reverse()}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => downloadFile(thumbnailQuality, `thumbnail_${videoInfo.title || 'video'}.jpg`)}
+                        className="w-full text-xs py-2 bg-[rgb(var(--foreground))]/10 hover:bg-[rgb(var(--foreground))]/20 text-[rgb(var(--foreground))] rounded font-medium flex items-center justify-center gap-2 transition-all"
+                      >
+                        <Download className="w-3.5 h-3.5" /> {t.downloadThumbnail}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Community Post Media Detection */}
+              {isPostMedia && (
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center gap-3">
+                  <div className="bg-blue-500/20 p-2 rounded-lg">
+                    <FileText className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-blue-500">{t.postMediaLabel}</h4>
+                    <p className="text-[10px] text-blue-500/70">{t.communityPostDetected || "Community Post detected. You can download images or attached content via the result below."}</p>
+                  </div>
+                </div>
+              )}
 
                 {/* Subtitles Options */}
                 {format === 'video' && (
