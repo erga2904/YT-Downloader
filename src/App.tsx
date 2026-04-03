@@ -239,6 +239,11 @@
         linkSesiHabis: "Link Sesi Habis",
         linkExpiredDesc: "Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini secara otomatis?",
         sortingBySize: "Diurutkan berdasarkan ukuran (terbesar dulu)"
+      }
+    }
+  };
+
+  function CustomSelect({ value, onChange, options, label, disabled, isOpen, onToggle, info, placeholder }: { value: string; onChange: (val: string) => void; options: { label: string; value: string }[]; label: string; disabled?: boolean; isOpen: boolean; onToggle: () => void; info?: string; placeholder?: string }) {
     return (
     <div className="relative space-y-2">
       <div className="flex items-center gap-1.5">
