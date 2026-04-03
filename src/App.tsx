@@ -727,7 +727,7 @@
       abortControllerRef.current = new AbortController();
 
       try {
-        const res = await fetch('/api/download', {
+        const response = await fetch('/api/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -743,20 +743,22 @@
             codec, 
             audioBitrate, 
             sampleRate,
-            useMirror: retryCount > 0 // Signal to backend to use mirror if primary fails
+            useMirror: retryCount > 0 
           }),
           signal: abortControllerRef.current.signal
         });
 
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await res.text();
-          throw new Error(text.slice(0, 50) || "Server returned an invalid response");
+        const responseText = await response.text();
+        let data;
+        
+        try {
+          data = JSON.parse(responseText);
+        } catch (jsonErr) {
+          console.error("Failed to parse JSON response:", responseText);
+          throw new Error(responseText.slice(0, 100) || "Server returned an invalid response");
         }
 
-        const data = await res.json();
-
-        if (!res.ok) {
+        if (!response.ok) {
           throw new Error(data.error || 'Failed to download media');
         }
 
@@ -797,18 +799,18 @@
     const pollProgress = async (progressUrl: string, title: string, thumbnail: string) => {
       try {
         abortControllerRef.current = new AbortController();
-        // Use proxy to avoid absolute URL and CORS issues on Vercel
         const proxyUrl = `/api/progress?url=${encodeURIComponent(progressUrl)}`;
-        const res = await fetch(proxyUrl, { signal: abortControllerRef.current.signal });
+        const response = await fetch(proxyUrl, { signal: abortControllerRef.current.signal });
         
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await res.text();
-          console.error("Non-JSON response received:", text);
-          throw new Error(text.slice(0, 100) || "Server returned an invalid response (not JSON)");
+        const responseText = await response.text();
+        let data;
+        
+        try {
+          data = JSON.parse(responseText);
+        } catch (jsonErr) {
+          console.error("Progress JSON parse error:", responseText);
+          throw new Error(responseText.slice(0, 50) || "Server status error");
         }
-        
-        const data = await res.json();
 
         if (data.success === 1 && data.download_url) {
           setResult({ 
