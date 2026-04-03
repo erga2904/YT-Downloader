@@ -220,7 +220,7 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const transcriptScrollRef = React.useRef<HTMLDivElement>(null);
-  const playbackIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const playbackIntervalRef = React.useRef<any>(null);
 
   const togglePlayback = () => {
     if (isPlaying) {
@@ -274,14 +274,14 @@ export default function App() {
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const pollTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const pollTimeoutRef = React.useRef<any>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const [notifications, setNotifications] = useState<any[]>(() => {
     const saved = localStorage.getItem('notifications');
     if (saved) return JSON.parse(saved);
     return [
       { id: 1, title: 'New Features!', message: 'Added in-app downloads and higher resolutions.', date: Date.now(), read: false },
-      { id: 2, title: 'Upgrade', message: 'Check out the new Premium options coming soon.', date: Date.now() - 86400000, read: false }
+      { id: 2, title: 'Update', message: 'Check out the new features and improvements.', date: Date.now() - 86400000, read: false }
     ];
   });
   const [toasts, setToasts] = useState<any[]>([]);
@@ -1334,11 +1334,6 @@ export default function App() {
                       </span>
                     </div>
                     <p className="text-xs text-[rgb(var(--foreground))]/70 leading-relaxed">{notif.message}</p>
-                    {notif.title === 'Upgrade' && (
-                      <button className="mt-3 w-full py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:opacity-90 transition-opacity">
-                        Explore Premium
-                      </button>
-                    )}
                   </div>
                 ))}
               </div>
