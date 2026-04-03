@@ -11,10 +11,19 @@ app.post('/api/info', async (req, res) => {
     if (!url) return res.status(400).json({ error: 'URL is required' });
 
     try {
-      const info = await ytdl.getBasicInfo(url);
-      const formats = await ytdl.getInfo(url).then(info => info.formats);
+      const info = await ytdl.getInfo(url);
+      const formats = info.formats;
       
       const videoFormats = formats.filter(f => f.hasVideo);
+      
+      // Extract subtitles if available
+      const captions = info.player_response?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+      const subtitleTracks = captions.map((track: any) => ({
+        label: track.name.simpleText,
+        language: track.languageCode,
+        url: track.baseUrl
+      }));
+
       const uniqueResolutions = Array.from(new Set(videoFormats.map(f => f.qualityLabel).filter(Boolean)))
         .map(quality => {
           const qStr = String(quality);
@@ -26,10 +35,12 @@ app.post('/api/info', async (req, res) => {
         })
         .sort((a, b) => parseInt(b.value) - parseInt(a.value));
 
-      return res.json({
+        return res.json({
         title: info.videoDetails.title,
         thumbnail: info.videoDetails.thumbnails[info.videoDetails.thumbnails.length - 1].url,
-        hasSubtitles: !!info.player_response.captions,
+        thumbnails: info.videoDetails.thumbnails, // Added all thumbnail options
+        hasSubtitles: subtitleTracks.length > 0,
+        subtitles: subtitleTracks,
         resolutions: uniqueResolutions.length > 0 ? uniqueResolutions : [
           { label: "1080p (Full HD)", value: "1080" },
           { label: "720p (HD)", value: "720" },
@@ -43,9 +54,15 @@ app.post('/api/info', async (req, res) => {
       try {
         const loaderRes = await fetch(loaderUrl);
         const data: any = await loaderRes.json();
+        
+        // Basic thumbnail extraction from URL if possible in fallback
+        let fallbackThumb = data.info?.image || null;
+        let fallbackThumbs = fallbackThumb ? [{ url: fallbackThumb, width: 1280, height: 720 }] : [];
+
         return res.json({
           title: data.title || 'Download',
-          thumbnail: data.info?.image || null,
+          thumbnail: fallbackThumb,
+          thumbnails: fallbackThumbs,
           hasSubtitles: false,
           resolutions: [
             { label: "1080p (Full HD)", value: "1080" },
