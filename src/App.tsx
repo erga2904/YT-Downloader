@@ -748,6 +748,12 @@
           signal: abortControllerRef.current.signal
         });
 
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await res.text();
+          throw new Error(text.slice(0, 50) || "Server returned an invalid response");
+        }
+
         const data = await res.json();
 
         if (!res.ok) {
@@ -795,8 +801,11 @@
         const proxyUrl = `/api/progress?url=${encodeURIComponent(progressUrl)}`;
         const res = await fetch(proxyUrl, { signal: abortControllerRef.current.signal });
         
-        if (!res.ok) {
-          throw new Error(`Progress server error: ${res.status}`);
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await res.text();
+          console.error("Non-JSON response received:", text);
+          throw new Error(text.slice(0, 100) || "Server returned an invalid response (not JSON)");
         }
         
         const data = await res.json();
