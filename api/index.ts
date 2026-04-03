@@ -17,10 +17,11 @@ app.post('/api/info', async (req, res) => {
       const videoFormats = formats.filter(f => f.hasVideo);
       const uniqueResolutions = Array.from(new Set(videoFormats.map(f => f.qualityLabel).filter(Boolean)))
         .map(quality => {
-          const res = quality!.match(/\d+/);
+          const qStr = String(quality);
+          const res = qStr.match(/\d+/);
           return {
-            label: quality!,
-            value: res ? res[0] : quality!
+            label: qStr,
+            value: res ? res[0] : qStr
           };
         })
         .sort((a, b) => parseInt(b.value) - parseInt(a.value));
