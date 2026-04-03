@@ -1547,23 +1547,17 @@
                           </div>
                           <div className="flex items-center gap-1">
                             <button
-                              onClick={async () => {
-                                try {
-                                  const response = await fetch(item.url, { method: 'HEAD' });
-                                  if (response.ok) {
-                                    downloadFile(item.url, `${item.title || 'download'}.${item.format === 'mp3' ? 'mp3' : 'mp4'}`);
-                                    addToast('Downloading from history...', 'info', false);
-                                  } else {
-                                    throw new Error('Link expired');
-                                  }
-                                } catch (e) {
-                                  setReDownloadViewport({ top: window.scrollY, height: window.innerHeight });
-                                  const initialFormat = item.format === 'mp3' ? 'mp3' : 'video';
-                                  setReDownloadFormat(initialFormat);
-                                  setReDownloadQuality(item.quality || availableResolutions.find(r => r.value === '720')?.value || availableResolutions[0]?.value || '720');
-                                  setReDownloadAudioBitrate('320');
-                                  setReDownloadItem({ ...item });
-                                }
+                              onClick={() => {
+                                // Direct download trigger without fetching via JS to avoid CORS/HEAD issues
+                                // If the link is expired, the browser will navigate/show 404/expired page
+                                // and the user can then trigger the "Re-download" flow if they want.
+                                // Or we can directly show redownload modal as checking is usually blocking.
+                                setReDownloadViewport({ top: window.scrollY, height: window.innerHeight });
+                                const initialFormat = item.format === 'mp3' ? 'mp3' : 'video';
+                                setReDownloadFormat(initialFormat);
+                                setReDownloadQuality(item.quality || availableResolutions.find(r => r.value === '720')?.value || availableResolutions[0]?.value || '720');
+                                setReDownloadAudioBitrate('320');
+                                setReDownloadItem({ ...item });
                               }}
                               className={cn(
                                 "p-2 rounded-md transition-all text-[rgb(var(--foreground))]/40 hover:text-green-500 hover:bg-green-500/10",
