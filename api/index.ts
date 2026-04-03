@@ -92,7 +92,15 @@ app.post('/api/download', async (req, res) => {
     // Sanitize and prepare format/quality for loader.to
     // format can be 'mp3' or 'video'
     // quality is typically '1080', '720', etc.
-    const loaderFormat = format === 'mp3' ? 'mp3' : (quality || '720');
+    // loader.to uses specific formats for high res
+    let loaderFormat = format === 'mp3' ? 'mp3' : (quality || '720');
+    
+    // Map high resolutions to loader.to format strings if needed
+    if (format === 'video') {
+      if (quality === '2160') loaderFormat = '4k';
+      else if (quality === '1440') loaderFormat = '8k'; // Some mirrors use 8k label for 1440p+ or specific codes
+      // Note: Loader.to usually uses '4k' for 2160p and '1440' or '8k' for others
+    }
     
     // Use the native fetch for Vercel/Node 18+
     const fetchUrl = `https://loader.to/ajax/download.php?format=${loaderFormat}&url=${encodeURIComponent(url)}`;
