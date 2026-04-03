@@ -646,7 +646,7 @@
         return;
       }
 
-      if (showDownloadConfirmation && !isConfirmationModalOpen && retryCount === 0) {
+      if (showDownloadConfirmation && !isConfirmationModalOpen && retryCount === 0 && !isReDownloading) {
         setIsConfirmationModalOpen(true);
         return;
       }
