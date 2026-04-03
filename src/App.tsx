@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Film, Music, Loader2, AlertCircle, Link as LinkIcon, Settings2, Subtitles, ChevronDown, Info, Check, X, Trash2, History, Ghost, EyeOff, Eye, FolderOpen, ExternalLink, FileText, Play, Pause } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
@@ -1440,7 +1441,7 @@ export default function App() {
                   </div>
                 )}
 
-                {reDownloadItem && (
+                {reDownloadItem && typeof document !== 'undefined' && createPortal(
                   <div className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
                     <motion.div 
                       key="redownload-modal"
@@ -1500,7 +1501,8 @@ export default function App() {
                         </button>
                       </div>
                     </motion.div>
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </div>
 
