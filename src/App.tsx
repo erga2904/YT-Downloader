@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Download, Film, Music, Loader2, AlertCircle, Link as LinkIcon, Settings2, Subtitles, ChevronDown, Info, Check, X, Trash2, History, Ghost, EyeOff, Eye, FolderOpen, ExternalLink, FileText, Play, Pause, Bell } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Download, Film, Music, Loader2, AlertCircle, Link as LinkIcon, Settings2, Subtitles, ChevronDown, Info, Check, X, Trash2, History, Ghost, EyeOff, Eye, FolderOpen, ExternalLink, FileText, Play, Pause } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -664,10 +664,10 @@ export default function App() {
   const isLoading = status === 'loading';
 
   return (
-    <div className="min-h-screen bg-[rgb(var(--background))] text-[rgb(var(--foreground))] flex flex-col items-center justify-center p-4 font-sans transition-colors duration-300">
+  <div className="min-h-screen bg-[rgb(var(--background))] text-[rgb(var(--foreground))] flex flex-col items-center justify-center p-4 font-sans transition-colors duration-300">
       <div className="flex-1 flex items-center justify-center w-full">
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
           className="w-full max-w-xl"
@@ -693,71 +693,6 @@ export default function App() {
               {t.downloadTab}
             </button>
             <div className="ml-auto flex items-center gap-2 pb-3">
-              <div className="relative" ref={notificationRef}>
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className={cn(
-                    "p-1.5 rounded-md transition-all flex items-center relative",
-                    showNotifications
-                      ? "bg-[rgb(var(--foreground))]/10 text-[rgb(var(--foreground))]"
-                      : "text-[rgb(var(--foreground))]/30 hover:text-[rgb(var(--foreground))]/50 hover:bg-[rgb(var(--foreground))]/5"
-                  )}
-                  title="Notifications"
-                >
-                  <Bell className="w-4 h-4" />
-                  {notifications.some(n => !n.read) && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[rgb(var(--background))]" />
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {showNotifications && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 mt-2 w-80 bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/10 rounded-xl shadow-2xl z-[60] overflow-hidden"
-                    >
-                      <div className="p-4 border-b border-[rgb(var(--foreground))]/10 flex items-center justify-between bg-[rgb(var(--foreground))]/5">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-[rgb(var(--foreground))]/40">Notifications</h3>
-                        <button 
-                          onClick={() => {
-                            setNotifications(notifications.map(n => ({ ...n, read: true })));
-                            addToast('All marked as read', 'success');
-                          }}
-                          className="text-[10px] text-purple-500 hover:underline"
-                        >
-                          Mark all as read
-                        </button>
-                      </div>
-                      <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                        {notifications.length > 0 ? (
-                          notifications.map(notif => (
-                            <div 
-                              key={notif.id} 
-                              className={cn(
-                                "p-4 border-b border-[rgb(var(--foreground))]/5 last:border-0 transition-colors",
-                                notif.read ? "opacity-60" : "bg-purple-500/5"
-                              )}
-                            >
-                              <div className="flex justify-between items-start mb-1">
-                                <h4 className="text-xs font-bold text-[rgb(var(--foreground))]">{notif.title}</h4>
-                                <span className="text-[9px] text-[rgb(var(--foreground))]/40">{new Date(notif.date).toLocaleDateString()}</span>
-                              </div>
-                              <p className="text-[11px] text-[rgb(var(--foreground))]/70 leading-relaxed">{notif.message}</p>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-8 text-center">
-                            <p className="text-xs text-[rgb(var(--foreground))]/30 italic">No notifications</p>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
               <button
                 type="button"
                 onClick={() => setActiveTab('settings')}
@@ -770,6 +705,9 @@ export default function App() {
                 title={t.settingsTab}
               >
                 <Settings2 className="w-4 h-4" />
+                {activeTab === 'settings' && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Settings</span>
+                )}
               </button>
               <button
                 type="button"
