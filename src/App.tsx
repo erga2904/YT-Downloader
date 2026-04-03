@@ -776,7 +776,7 @@ export default function App() {
                     layout
                     initial={{ opacity: 0, x: 20, scale: 0.9 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 20, opacity: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
                     transition={{ type: 'spring', damping: 20, stiffness: 300 }}
                     className={cn(
                       "px-4 py-3 rounded-lg shadow-lg border backdrop-blur-md flex items-center gap-3 min-w-[200px] pointer-events-auto",
@@ -1328,187 +1328,188 @@ export default function App() {
                       </div>
                     ))}
                   </div>
+                ) : (
+                  <div className="py-8 text-center bg-[rgb(var(--foreground))]/5 rounded-xl border border-dashed border-[rgb(var(--foreground))]/10">
+                    <p className="text-xs text-[rgb(var(--foreground))]/30 italic">{t.noHistory}</p>
+                  </div>
+                )}
 
-                  {reDownloadItem && (
-                    <div className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                {reDownloadItem && (
+                  <div className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/10 p-6 rounded-2xl w-full max-w-sm shadow-2xl"
+                    >
+                      <h4 className="text-sm font-bold mb-2">Link Sesi Habis</h4>
+                      <p className="text-xs text-[rgb(var(--foreground))]/60 mb-6">
+                        Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini ("{reDownloadItem.title}") secara otomatis?
+                      </p>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setReDownloadItem(null)}
+                          className="flex-1 py-2 text-xs font-medium border border-[rgb(var(--foreground))]/10 rounded-lg hover:bg-[rgb(var(--foreground))]/5"
+                        >
+                          Batal
+                        </button>
+                        <button 
+                          onClick={handleReDownload}
+                          className="flex-1 py-2 text-xs font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-lg shadow-green-500/20"
+                        >
+                          Ya, Download Ulang
+                        </button>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-6">
+                <button
+                  onClick={handleSaveSettings}
+                  className="w-full py-3 bg-[rgb(var(--foreground))] text-[rgb(var(--background))] rounded-xl font-semibold hover:bg-[rgb(var(--foreground))]/90 transition-all shadow-lg shadow-[rgb(var(--foreground))]/10"
+                >
+                  {t.saveSettings}
+                </button>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+            {status === 'error' && (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md flex items-start gap-3 text-red-500"
+              >
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="text-sm">{errorMessage}</p>
+              </motion.div>
+            )}
+
+            {status === 'success' && result && (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-6 p-6 bg-[rgb(var(--foreground))]/5 border border-[rgb(var(--foreground))]/10 rounded-md text-center space-y-4"
+              >
+                {result.thumbnail && (
+                  <div className="relative w-full aspect-video rounded overflow-hidden border border-[rgb(var(--foreground))]/10 mb-4">
+                    <img src={result.thumbnail} alt={result.title || 'Video thumbnail'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                )}
+                
+                <div>
+                  <h3 className="text-base font-medium text-[rgb(var(--foreground))] mb-1 line-clamp-2">{result.title || t.readyToDownload}</h3>
+                  <p className="text-sm text-[rgb(var(--foreground))]/60">{t.mediaProcessed}</p>
+                </div>
+                <a
+                  href={result.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 w-full bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/20 hover:bg-[rgb(var(--foreground))]/5 text-[rgb(var(--foreground))] font-medium py-2.5 px-4 rounded-md transition-all"
+                >
+                  <Download className="w-4 h-4" /> {t.downloadMedia}
+                </a>
+                {result.subtitleUrl && (
+                  <a
+                    href={result.subtitleUrl}
+                    download={`${result.title || 'subtitles'}.srt`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 w-full bg-[rgb(var(--foreground))]/10 border border-[rgb(var(--foreground))]/10 hover:bg-[rgb(var(--foreground))]/20 text-[rgb(var(--foreground))] font-medium py-2.5 px-4 rounded-md transition-all"
+                  >
+                    <Subtitles className="w-4 h-4" /> {t.downloadSubtitles}
+                  </a>
+                )}
+
+                {result.transcriptUrl && (
+                  <a
+                    href={result.transcriptUrl}
+                    download={`${result.title || 'transcript'}.txt`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 w-full bg-[rgb(var(--foreground))]/10 border border-[rgb(var(--foreground))]/10 hover:bg-[rgb(var(--foreground))]/20 text-[rgb(var(--foreground))] font-medium py-2.5 px-4 rounded-md transition-all"
+                  >
+                    <FileText className="w-4 h-4" /> {t.downloadTranscriptLabel}
+                  </a>
+                )}
+
+                {result.transcript && result.transcript.length > 0 && (
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setShowTranscript(!showTranscript)}
+                      className="inline-flex items-center justify-center gap-2 w-full bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-500 font-medium py-2.5 px-4 rounded-md transition-all"
+                    >
+                      <Subtitles className="w-4 h-4" /> {t.viewTranscriptBtn}
+                    </button>
+
+                    {showTranscript && (
                       <motion.div 
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/10 p-6 rounded-2xl w-full max-w-sm shadow-2xl"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/10 rounded-xl overflow-hidden"
                       >
-                        <h4 className="text-sm font-bold mb-2">Link Sesi Habis</h4>
-                        <p className="text-xs text-[rgb(var(--foreground))]/60 mb-6">
-                          Link download ini sudah kedaluwarsa. Apakah Anda ingin mendownload ulang video ini ("{reDownloadItem.title}") secara otomatis?
-                        </p>
-                        <div className="flex gap-2">
+                        <div className="p-3 border-b border-[rgb(var(--foreground))]/10 flex items-center justify-between bg-[rgb(var(--foreground))]/5">
+                          <span className="text-xs font-bold uppercase tracking-wider text-[rgb(var(--foreground))]/40">Transcript</span>
                           <button 
-                            onClick={() => setReDownloadItem(null)}
-                            className="flex-1 py-2 text-xs font-medium border border-[rgb(var(--foreground))]/10 rounded-lg hover:bg-[rgb(var(--foreground))]/5"
+                            onClick={togglePlayback}
+                            className="p-1.5 rounded-full bg-purple-500 text-white hover:bg-purple-600 transition-colors"
                           >
-                            Batal
+                            {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                           </button>
-                          <button 
-                            onClick={handleReDownload}
-                            className="flex-1 py-2 text-xs font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-lg shadow-green-500/20"
-                          >
-                            Ya, Download Ulang
-                          </button>
+                        </div>
+                        <div 
+                          ref={transcriptScrollRef}
+                          className="max-h-60 overflow-y-auto p-4 space-y-4 custom-scrollbar"
+                        >
+                          {result.transcript.map((line, idx) => {
+                            const isActive = currentTime >= line.start && currentTime < (line.start + line.duration);
+                            return (
+                              <div 
+                                key={idx} 
+                                className={cn(
+                                  "transition-all duration-300 rounded-lg p-2 cursor-pointer hover:bg-[rgb(var(--foreground))]/5",
+                                  isActive ? "active-transcript-line bg-purple-500/10 border-l-2 border-purple-500 pl-3" : "opacity-40"
+                                )}
+                                onClick={() => {
+                                  setCurrentTime(line.start);
+                                  if (!isPlaying) togglePlayback();
+                                }}
+                              >
+                                <span className="text-[10px] font-mono text-purple-500 block mb-1">
+                                  {Math.floor(line.start / 60)}:{Math.floor(line.start % 60).toString().padStart(2, '0')}
+                                </span>
+                                <p className={cn(
+                                  "text-sm leading-relaxed",
+                                  isActive ? "text-[rgb(var(--foreground))] font-medium" : "text-[rgb(var(--foreground))]/80"
+                                )}>
+                                  {line.text}
+                                </p>
+                              </div>
+                            );
+                          })}
                         </div>
                       </motion.div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="py-8 text-center bg-[rgb(var(--foreground))]/5 rounded-xl border border-dashed border-[rgb(var(--foreground))]/10">
-                  <p className="text-xs text-[rgb(var(--foreground))]/30 italic">{t.noHistory}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-6">
-              <button
-                onClick={handleSaveSettings}
-                className="w-full py-3 bg-[rgb(var(--foreground))] text-[rgb(var(--background))] rounded-xl font-semibold hover:bg-[rgb(var(--foreground))]/90 transition-all shadow-lg shadow-[rgb(var(--foreground))]/10"
-              >
-                {t.saveSettings}
-              </button>
-            </div>
-          </div>
-        )}
-      </motion.div>
-    </AnimatePresence>
-
-    <AnimatePresence mode="wait">
-      {status === 'error' && (
-        <motion.div
-          key="error"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md flex items-start gap-3 text-red-500"
-        >
-          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <p className="text-sm">{errorMessage}</p>
-        </motion.div>
-      )}
-
-      {status === 'success' && result && (
-        <motion.div
-          key="success"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          className="mt-6 p-6 bg-[rgb(var(--foreground))]/5 border border-[rgb(var(--foreground))]/10 rounded-md text-center space-y-4"
-        >
-          {result.thumbnail && (
-            <div className="relative w-full aspect-video rounded overflow-hidden border border-[rgb(var(--foreground))]/10 mb-4">
-              <img src={result.thumbnail} alt={result.title || 'Video thumbnail'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-            </div>
-          )}
-          
-          <div>
-            <h3 className="text-base font-medium text-[rgb(var(--foreground))] mb-1 line-clamp-2">{result.title || t.readyToDownload}</h3>
-            <p className="text-sm text-[rgb(var(--foreground))]/60">{t.mediaProcessed}</p>
-          </div>
-          <a
-            href={result.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 w-full bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/20 hover:bg-[rgb(var(--foreground))]/5 text-[rgb(var(--foreground))] font-medium py-2.5 px-4 rounded-md transition-all"
-          >
-            <Download className="w-4 h-4" /> {t.downloadMedia}
-          </a>
-          {result.subtitleUrl && (
-            <a
-              href={result.subtitleUrl}
-              download={`${result.title || 'subtitles'}.srt`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 w-full bg-[rgb(var(--foreground))]/10 border border-[rgb(var(--foreground))]/10 hover:bg-[rgb(var(--foreground))]/20 text-[rgb(var(--foreground))] font-medium py-2.5 px-4 rounded-md transition-all"
-            >
-              <Subtitles className="w-4 h-4" /> {t.downloadSubtitles}
-            </a>
-          )}
-
-          {result.transcriptUrl && (
-            <a
-              href={result.transcriptUrl}
-              download={`${result.title || 'transcript'}.txt`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 w-full bg-[rgb(var(--foreground))]/10 border border-[rgb(var(--foreground))]/10 hover:bg-[rgb(var(--foreground))]/20 text-[rgb(var(--foreground))] font-medium py-2.5 px-4 rounded-md transition-all"
-            >
-              <FileText className="w-4 h-4" /> {t.downloadTranscriptLabel}
-            </a>
-          )}
-
-          {result.transcript && result.transcript.length > 0 && (
-            <div className="space-y-3">
-              <button
-                onClick={() => setShowTranscript(!showTranscript)}
-                className="inline-flex items-center justify-center gap-2 w-full bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-500 font-medium py-2.5 px-4 rounded-md transition-all"
-              >
-                <Subtitles className="w-4 h-4" /> {t.viewTranscriptBtn}
-              </button>
-
-              {showTranscript && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="bg-[rgb(var(--background))] border border-[rgb(var(--foreground))]/10 rounded-xl overflow-hidden"
-                >
-                  <div className="p-3 border-b border-[rgb(var(--foreground))]/10 flex items-center justify-between bg-[rgb(var(--foreground))]/5">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[rgb(var(--foreground))]/40">Transcript</span>
-                    <button 
-                      onClick={togglePlayback}
-                      className="p-1.5 rounded-full bg-purple-500 text-white hover:bg-purple-600 transition-colors"
-                    >
-                      {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                    </button>
+                    )}
                   </div>
-                  <div 
-                    ref={transcriptScrollRef}
-                    className="max-h-60 overflow-y-auto p-4 space-y-4 custom-scrollbar"
-                  >
-                    {result.transcript.map((line, idx) => {
-                      const isActive = currentTime >= line.start && currentTime < (line.start + line.duration);
-                      return (
-                        <div 
-                          key={idx} 
-                          className={cn(
-                            "transition-all duration-300 rounded-lg p-2 cursor-pointer hover:bg-[rgb(var(--foreground))]/5",
-                            isActive ? "active-transcript-line bg-purple-500/10 border-l-2 border-purple-500 pl-3" : "opacity-40"
-                          )}
-                          onClick={() => {
-                            setCurrentTime(line.start);
-                            if (!isPlaying) togglePlayback();
-                          }}
-                        >
-                          <span className="text-[10px] font-mono text-purple-500 block mb-1">
-                            {Math.floor(line.start / 60)}:{Math.floor(line.start % 60).toString().padStart(2, '0')}
-                          </span>
-                          <p className={cn(
-                            "text-sm leading-relaxed",
-                            isActive ? "text-[rgb(var(--foreground))] font-medium" : "text-[rgb(var(--foreground))]/80"
-                          )}>
-                            {line.text}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          )}
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        
         </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
-</div>
+      </div>
 
-<footer className="w-full py-6 text-center">
-</footer>
+      <footer className="w-full py-6 text-center">
+      </footer>
 
       <AnimatePresence>
         {isConfirmationModalOpen && (
